@@ -1,0 +1,6 @@
+server:
+    httpflv:
+        port: 8080
+    flvfile:
+        save: true
+        
