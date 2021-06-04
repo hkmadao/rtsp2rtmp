@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.3.0">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>70</x>
+      <y>620</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>Camera
+--
++Id                string
++Code              string
++RtspURL           string
++RtmpURL           string
++AuthCodeTemp      string
++AuthCodePermanent string
++OnlineStatus      int      
+--
+CameraSelectAll []Camera</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>90</x>
+      <y>260</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>RtspManager
+--
+-done &lt;-chan interface{}
+--
+-pktTransfer()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>990</x>
+      <y>380</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>FlvFileWriter
+--
+-code           string
+-isStart        bool
+--
++Write(btyes []byte): (int,error)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1000</x>
+      <y>100</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>HttpFlvWriter
+--
+-sessionId      string
+-code           string
+-isStart        bool
+-close          bool
+--
++Write(btyes []byte): (int,error)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>990</x>
+      <y>660</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>RtmpFlvWriter
+--
+-code           string
+-isStart        bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>610</x>
+      <y>100</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>FileFlvManager
+--
+--
++FlvWrite()
+-codec()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>620</x>
+      <y>370</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>FlvFileManager
+--
+--
++FlvWrite()
+-codec()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>620</x>
+      <y>660</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>RtmpFlvManager
+--
+--
++FlvWrite()
+-codec()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>150</y>
+      <w>340</w>
+      <h>180</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;160.0;320.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>300</y>
+      <w>350</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;330.0;130.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>280</x>
+      <y>300</y>
+      <w>360</w>
+      <h>450</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;20.0;10.0;340.0;430.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>810</x>
+      <y>170</y>
+      <w>210</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;190.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>820</x>
+      <y>460</y>
+      <w>190</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>820</x>
+      <y>740</y>
+      <w>190</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+</diagram>

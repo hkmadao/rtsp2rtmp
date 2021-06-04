@@ -3,7 +3,6 @@ package httpflv
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -12,23 +11,24 @@ import (
 
 	"github.com/yumrano/rtsp2rtmp/conf"
 	"github.com/yumrano/rtsp2rtmp/dao"
+	"github.com/yumrano/rtsp2rtmp/rlog"
 )
 
 func ServeHTTP() error {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Panicf("httpflv ServeHTTP pain %v", r)
+			rlog.Log.Printf("httpflv ServeHTTP pain %v", r)
 		}
 	}()
 	port, err := conf.GetInt("server.httpflv.port")
 	if err != nil {
-		log.Printf("get httpflv port error: %v. \n use default port : 8080", err)
+		rlog.Log.Printf("get httpflv port error: %v. \n use default port : 8080 %v", err)
 		port = 8080
 	}
 	httpflvAddr := ":" + strconv.Itoa(port)
 	flvListen, err := net.Listen("tcp", httpflvAddr)
 	if err != nil {
-		log.Fatal(err)
+		rlog.Log.Printf("%v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -50,13 +50,13 @@ func cameraAll(w http.ResponseWriter, r *http.Request) {
 	result["msg"] = ""
 	es, err := dao.CameraSelectAll()
 	if err != nil {
-		log.Printf("get camera list error : %v", err)
+		rlog.Log.Printf("get camera list error : %v", err)
 		result["code"] = 0
 		result["msg"] = ""
 		result["data"] = "{}"
 		rbytes, err := json.Marshal(result)
 		if err != nil {
-			log.Printf("parse json camera list error : %v", err)
+			rlog.Log.Printf("parse json camera list error : %v", err)
 			w.Write([]byte("{}"))
 			return
 		}
@@ -70,7 +70,7 @@ func cameraAll(w http.ResponseWriter, r *http.Request) {
 	result["data"] = data
 	rbytes, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("parse json camera list error : %v", err)
+		rlog.Log.Printf("parse json camera list error : %v", err)
 		w.Write([]byte("{}"))
 		return
 	}
@@ -92,12 +92,12 @@ func cameraEdit(w http.ResponseWriter, r *http.Request) {
 	var param map[string]interface{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("read param error : %v", err)
+		rlog.Log.Printf("read param error : %v", err)
 	}
-	log.Printf("%s", r.Method)
+	rlog.Log.Printf("%s", r.Method)
 	err = json.Unmarshal(body, &param)
 	if err != nil {
-		log.Printf("parse param to json error : %v", err)
+		rlog.Log.Printf("parse param to json error : %v", err)
 	}
 	if param["id"] == nil {
 		param["id"] = ""
@@ -114,7 +114,7 @@ func cameraEdit(w http.ResponseWriter, r *http.Request) {
 	if e.Id == "" {
 		count, err := dao.CameraCountByCode(e.Code)
 		if err != nil || count > 0 {
-			log.Printf("check code is exist camera error : %v", err)
+			rlog.Log.Printf("check code is exist camera error : %v", err)
 			result["code"] = 0
 			result["msg"] = "code exist !"
 			result["data"] = "{}"
@@ -125,7 +125,7 @@ func cameraEdit(w http.ResponseWriter, r *http.Request) {
 		e.Id = time.Now().Format("20060102150405")
 		_, err = dao.CameraInsert(e)
 		if err != nil {
-			log.Printf("insert camera error : %v", err)
+			rlog.Log.Printf("insert camera error : %v", err)
 			result["code"] = 0
 			result["msg"] = "insert camera error !"
 			result["data"] = "{}"
@@ -136,7 +136,7 @@ func cameraEdit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		count, err := dao.CameraCountByCode(e.Code)
 		if err != nil || count > 1 {
-			log.Printf("get camera list error : %v", err)
+			rlog.Log.Printf("get camera list error : %v", err)
 			result["code"] = 0
 			result["msg"] = "code exist !"
 			result["data"] = "{}"
@@ -146,7 +146,7 @@ func cameraEdit(w http.ResponseWriter, r *http.Request) {
 		}
 		_, err = dao.CameraUpdate(e)
 		if err != nil {
-			log.Printf("update camera error : %v", err)
+			rlog.Log.Printf("update camera error : %v", err)
 			result["code"] = 0
 			result["msg"] = "update camera error !"
 			result["data"] = "{}"
@@ -176,17 +176,17 @@ func cameraDelete(w http.ResponseWriter, r *http.Request) {
 	var param map[string]interface{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("read param error : %v", err)
+		rlog.Log.Printf("read param error : %v", err)
 	}
-	log.Printf("%s", r.Method)
+	rlog.Log.Printf("%s", r.Method)
 	err = json.Unmarshal(body, &param)
 	if err != nil {
-		log.Printf("parse param to json error : %v", err)
+		rlog.Log.Printf("parse param to json error : %v", err)
 	}
 	e := dao.Camera{Id: param["id"].(string)}
 	data, err := dao.CameraDelete(e)
 	if err != nil {
-		log.Printf("delete camera error : %v", err)
+		rlog.Log.Printf("delete camera error : %v", err)
 		result["code"] = 0
 		result["msg"] = "delete camera error !"
 		result["data"] = "{}"
@@ -203,7 +203,7 @@ func cameraDelete(w http.ResponseWriter, r *http.Request) {
 func reciver(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	sessionId := time.Now().Format("20060102150405")
-	fw := &FlvResponseWriter{
+	fw := &HttpFlvWriter{
 		sessionId:      sessionId,
 		isStart:        false,
 		responseWriter: w,
@@ -218,7 +218,7 @@ func reciver(w http.ResponseWriter, r *http.Request) {
 	done := make(chan interface{})
 	hms[uris[1]].fws[sessionId].done = done
 	<-done
-	log.Printf("session %s exit", sessionId)
+	rlog.Log.Printf("session %s exit", sessionId)
 }
 
 // func ServeHTTP() {
@@ -226,12 +226,12 @@ func reciver(w http.ResponseWriter, r *http.Request) {
 // 	router.GET("/recive", reciver)
 // 	port, err := conf.GetInt("server.httpflv.port")
 // 	if err != nil {
-// 		log.Printf("get httpflv port error: %v. \n use default port : 8080", err)
+// 		rlog.Log.Printf("get httpflv port error: %v. \n use default port : 8080", err)
 // 		port = 8080
 // 	}
 // 	err = router.Run(":" + strconv.Itoa(port))
 // 	if err != nil {
-// 		log.Fatalln("Start HTTP Server error", err)
+// 		rlog.Log.Fatalln("Start HTTP Server error", err)
 // 	}
 // }
 // func reciver(c *gin.Context) {

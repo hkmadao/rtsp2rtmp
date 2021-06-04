@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 .vscode
 rtsp2rtmp
+rtsp2rtmp.exe
 __debug_bin
-*.flv
+output/live/*.flv
+output/log/*.log

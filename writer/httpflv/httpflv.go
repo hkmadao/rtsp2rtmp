@@ -1,13 +1,11 @@
 package httpflv
 
 import (
-	"fmt"
-	"log"
-
 	"net/http"
 
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/flv"
+	"github.com/yumrano/rtsp2rtmp/rlog"
 )
 
 var hms map[string]*HttpFlvManager
@@ -18,12 +16,12 @@ func init() {
 
 type HttpFlvManager struct {
 	codecs []av.CodecData
-	fws    map[string]*FlvResponseWriter
+	fws    map[string]*HttpFlvWriter
 }
 
 func NewHttpFlvManager() *HttpFlvManager {
 	hm := &HttpFlvManager{
-		fws: make(map[string]*FlvResponseWriter),
+		fws: make(map[string]*HttpFlvWriter),
 	}
 	return hm
 }
@@ -37,7 +35,7 @@ func (fm *HttpFlvManager) codec(code string, codecs []av.CodecData) {
 func (fm *HttpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-chan interface{}, pchan <-chan av.Packet) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("HttpFlvManager FlvWrite pain %v", r)
+			rlog.Log.Printf("HttpFlvManager FlvWrite pain %v", r)
 		}
 	}()
 	fm.codec(code, codecs)
@@ -54,7 +52,7 @@ func (fm *HttpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 				}
 				if fw.isStart {
 					if err := fw.muxer.WritePacket(pkt); err != nil {
-						log.Printf("writer packet to httpflv error : %v\n", err)
+						rlog.Log.Printf("writer packet to httpflv error : %v\n", err)
 						if fw.errTime > 20 {
 							fw.close = true
 							continue
@@ -70,7 +68,7 @@ func (fm *HttpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 					fw.muxer = muxer
 					err := fw.muxer.WriteHeader(fm.codecs)
 					if err != nil {
-						log.Printf("writer header to httpflv error : %v\n", err)
+						rlog.Log.Printf("writer header to httpflv error : %v\n", err)
 						if fw.errTime > 20 {
 							fw.close = true
 							continue
@@ -79,7 +77,7 @@ func (fm *HttpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 					}
 					fw.isStart = true
 					if err := fw.muxer.WritePacket(pkt); err != nil {
-						log.Printf("writer packet to httpflv error : %v\n", err)
+						rlog.Log.Printf("writer packet to httpflv error : %v\n", err)
 					}
 				}
 			}
@@ -87,7 +85,7 @@ func (fm *HttpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 	}
 }
 
-type FlvResponseWriter struct {
+type HttpFlvWriter struct {
 	sessionId      string
 	code           string
 	isStart        bool
@@ -100,10 +98,10 @@ type FlvResponseWriter struct {
 }
 
 //Write extends to io.Writer
-func (fw *FlvResponseWriter) Write(p []byte) (n int, err error) {
+func (fw *HttpFlvWriter) Write(p []byte) (n int, err error) {
 	n, err = fw.responseWriter.Write(p)
 	if err != nil {
-		fmt.Println("write httpflv error :", err)
+		rlog.Log.Println("write httpflv error :", err)
 	}
 	return
 }
