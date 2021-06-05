@@ -3,5 +3,7 @@
 rtsp2rtmp
 rtsp2rtmp.exe
 __debug_bin
+output/releases
+output/*.zip
 output/live/*.flv
 output/log/*.log

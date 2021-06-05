@@ -10,7 +10,7 @@
 
 ##### 运行说明：
 
-1. 下载程序文件，解压   
+1. 下载[程序文件](https://github.com/hkmadao/rtsp2rtmp/releases)，解压   
 2. 执行程序文件：window下执行rtsp2rtmp.exe，linux下执行rtsp2rtmp   
 3. 浏览器访问程序服务地址：http://[server_ip]:8080/   
 4. 在网页配置摄像头的rtsp地址、要推送到的rtmp服务器地址等信息  
@@ -20,7 +20,6 @@
 > 注意：
 >
 > ​	程序目前支持h264视频编码、aac音频编码，若不能正常播放，关掉摄像头推送的音频再尝试
->
 
 ##### 目录结构：
 
