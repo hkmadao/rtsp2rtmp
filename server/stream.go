@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"time"
@@ -23,7 +23,7 @@ func NewServer() *Server {
 	}
 }
 
-func (s *Server) serveStreams() {
+func (s *Server) ServeStreams() {
 	defer func() {
 		if r := recover(); r != nil {
 			rlog.Log.Printf("rtspManager pain %v", r)
@@ -107,7 +107,7 @@ func (s *Server) serveStreams() {
 func writeChan(pkt av.Packet, c chan<- av.Packet, done <-chan interface{}) {
 	select {
 	case c <- pkt:
-	case <-time.After(1 * time.Nanosecond):
+	case <-time.After(1 * time.Millisecond):
 	case <-done:
 	}
 }

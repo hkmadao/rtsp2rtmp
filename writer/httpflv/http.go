@@ -22,7 +22,7 @@ func ServeHTTP() error {
 	}()
 	port, err := conf.GetInt("server.httpflv.port")
 	if err != nil {
-		rlog.Log.Printf("get httpflv port error: %v. \n use default port : 8080 %v", err)
+		rlog.Log.Printf("get httpflv port error: %v. \n use default port : 8080", err)
 		port = 8080
 	}
 	httpflvAddr := ":" + strconv.Itoa(port)

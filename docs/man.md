@@ -1,6 +1,6 @@
 #### rtsp2rtmp
 
-![](./docs/images/rtsp2rtmpad.png)
+![](./images/rtsp2rtmpad.png)
 
 ##### 项目功能：
 
@@ -20,6 +20,7 @@
 > 注意：
 >
 > ​	程序目前支持h264视频编码、aac音频编码，若不能正常播放，关掉摄像头推送的音频再尝试
+>
 
 ##### 目录结构：
 
