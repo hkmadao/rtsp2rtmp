@@ -67,17 +67,24 @@ func (s *Server) ServeStreams() {
 					continue
 				}
 
+				pRtmpFlvDone := make(chan interface{})
+				pFlvFileDone := make(chan interface{})
+				pHttpFlvDone := make(chan interface{})
 				pRtmpFlvChan := make(chan av.Packet)
 				pFlvFileChan := make(chan av.Packet)
 				pHttpFlvChan := make(chan av.Packet)
-				done := make(chan interface{})
 				rm := &RtspManager{
-					ffm:  fileflv.NewFileFlvManager(),
-					hfm:  httpflv.NewHttpFlvManager(),
-					frm:  rtmpflv.NewRtmpFlvManager(),
-					done: done,
+					ffm:          fileflv.NewFileFlvManager(),
+					hfm:          httpflv.NewHttpFlvManager(),
+					frm:          rtmpflv.NewRtmpFlvManager(),
+					pRtmpFlvDone: pRtmpFlvDone,
+					pFlvFileDone: pFlvFileDone,
+					pHttpFlvDone: pHttpFlvDone,
+					pRtmpFlvChan: pRtmpFlvChan,
+					pFlvFileChan: pFlvFileChan,
+					pHttpFlvChan: pHttpFlvChan,
 				}
-				rm.pktTransfer(c.Code, codec, pRtmpFlvChan, pFlvFileChan, pHttpFlvChan)
+				rm.pktTransfer(c.Code, codec)
 				s.rms[c.Code] = rm
 
 				c.OnlineStatus = 1
@@ -89,10 +96,13 @@ func (s *Server) ServeStreams() {
 						rlog.Log.Println(c.Code, err)
 						break
 					}
-					writeChan(pkt, pRtmpFlvChan, done)
-					writeChan(pkt, pFlvFileChan, done)
-					writeChan(pkt, pHttpFlvChan, done)
+					writeChan(pkt, pRtmpFlvChan, pRtmpFlvDone)
+					writeChan(pkt, pFlvFileChan, pFlvFileDone)
+					writeChan(pkt, pHttpFlvChan, pHttpFlvDone)
 				}
+				close(pRtmpFlvDone)
+				close(pFlvFileDone)
+				close(pHttpFlvDone)
 				err = session.Close()
 				if err != nil {
 					rlog.Log.Println("session Close error", err)
@@ -113,18 +123,42 @@ func writeChan(pkt av.Packet, c chan<- av.Packet, done <-chan interface{}) {
 }
 
 type RtspManager struct {
-	ffm  *fileflv.FileFlvManager
-	hfm  *httpflv.HttpFlvManager
-	frm  *rtmpflv.RtmpFlvManager
-	done <-chan interface{}
+	ffm          *fileflv.FileFlvManager
+	hfm          *httpflv.HttpFlvManager
+	frm          *rtmpflv.RtmpFlvManager
+	pRtmpFlvDone chan interface{}
+	pFlvFileDone chan interface{}
+	pHttpFlvDone chan interface{}
+	pRtmpFlvChan chan av.Packet
+	pFlvFileChan chan av.Packet
+	pHttpFlvChan chan av.Packet
 }
 
-func (r *RtspManager) pktTransfer(code string, codecs []av.CodecData, pRtmpFlvChan <-chan av.Packet, pFlvFileChan <-chan av.Packet, pHttpFlvChan <-chan av.Packet) {
-	go r.frm.FlvWrite(code, codecs, r.done, pRtmpFlvChan)
-	go r.hfm.FlvWrite(code, codecs, r.done, pHttpFlvChan)
+func (r *RtspManager) pktTransfer(code string, codecs []av.CodecData) {
+	go r.startRtmpClient(code, codecs)
+	go r.hfm.FlvWrite(code, codecs, r.pHttpFlvDone, r.pHttpFlvChan)
 	save, err := conf.GetBool("server.fileflv.save")
 	if err == nil && save {
-		go r.ffm.FlvWrite(code, codecs, r.done, pFlvFileChan)
+		go r.ffm.FlvWrite(code, codecs, r.pFlvFileDone, r.pFlvFileChan)
+		return
 	}
 	rlog.Log.Printf("get server.fileflv.save error : %v", err)
+}
+
+func (r *RtspManager) startRtmpClient(code string, codecs []av.CodecData) {
+	go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
+	for {
+		if r.frm.IsStop() {
+			select {
+			case r.pFlvFileDone <- nil: //结束上一个goroutine
+			case <-time.After(1 * time.Millisecond):
+			}
+			go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
+		}
+		select {
+		case <-r.pRtmpFlvDone:
+			return
+		case <-time.After(30 * time.Second):
+		}
+	}
 }

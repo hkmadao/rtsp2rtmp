@@ -11,7 +11,7 @@ import (
 var Log *log.Logger
 
 func init() {
-	log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
+	// log.SetFlags(log.Llongfile | log.Lmicroseconds | log.Ldate)
 	logPath, err := conf.GetString("server.log.path")
 	if err != nil {
 		log.Println("get logPath error :", err)
@@ -21,5 +21,6 @@ func init() {
 		log.Println("open file error :", err)
 	}
 	Log = log.New(lfile, "", log.Llongfile|log.Lmicroseconds|log.Ldate)
+	Log = log.New(log.Default().Writer(), "", log.Llongfile|log.Lmicroseconds|log.Ldate)
 	Log.Printf("test message : %s", "message")
 }
