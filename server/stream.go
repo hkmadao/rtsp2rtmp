@@ -143,11 +143,13 @@ func (r *RtspManager) pktTransfer(code string, codecs []av.CodecData) {
 	go r.startRtmpClient(code, codecs)
 	go r.hfm.FlvWrite(code, codecs, r.pHttpFlvDone, r.pHttpFlvChan)
 	save, err := conf.GetBool("server.fileflv.save")
-	if err == nil && save {
-		go r.ffm.FlvWrite(code, codecs, r.pFlvFileDone, r.pFlvFileChan)
+	if err != nil && save {
+		rlog.Log.Printf("get server.fileflv.save error : %v", err)
 		return
 	}
-	rlog.Log.Printf("get server.fileflv.save error : %v", err)
+	if save {
+		go r.ffm.FlvWrite(code, codecs, r.pFlvFileDone, r.pFlvFileChan)
+	}
 }
 
 func (r *RtspManager) startRtmpClient(code string, codecs []av.CodecData) {
