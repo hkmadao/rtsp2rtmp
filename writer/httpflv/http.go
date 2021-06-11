@@ -36,7 +36,7 @@ func ServeHTTP() error {
 	mux.HandleFunc("/camera/all", cameraAll)
 	mux.HandleFunc("/camera/edit", cameraEdit)
 	mux.HandleFunc("/camera/delete", cameraDelete)
-	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("statics"))))
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("static"))))
 	if err := http.Serve(flvListen, mux); err != nil {
 		return err
 	}

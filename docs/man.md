@@ -2,39 +2,21 @@
 
 ![](./images/rtsp2rtmpad.png)
 
-##### 项目功能：
+##### 项目说明：
 
-1. rtsp转httpflv播放
-2. rtsp转rtmp推送
-3. rtsp视频录像，录像文件为flv格式
+1. 用户配置摄像头信息，包括（摄像头编号：code、摄像头rtsp地址：rtspURL、推送的rtmp地址：rtmpURL等）
+2. 系统连接到摄像头，获取音视频数据
+3. 系统解析摄像头数据，保存为flv文件
+4. 系统推送搭到配置好的rtmp服务器
+5. 用户请求观看视频，系统返回视频数据给用户播放
 
-##### 运行说明：
+##### 解析说明：
 
-1. 下载[程序文件](https://github.com/hkmadao/rtsp2rtmp/releases)，解压   
-2. 执行程序文件：window下执行rtsp2rtmp.exe，linux下执行rtsp2rtmp   
-3. 浏览器访问程序服务地址：http://[server_ip]:8080/   
-4. 在网页配置摄像头的rtsp地址、要推送到的rtmp服务器地址等信息  
-5. 配置好后重启服务器  
-6. 再次进入网页观看视频      
-
-> 注意：
->
-> ​	程序目前支持h264视频编码、aac音频编码，若不能正常播放，关掉摄像头推送的音频再尝试
-
-##### 目录结构：
-
-```
---rtsp2rtmp #linux执行文件
---rtsp2rtmp.exe #window执行文件
-  --statics #程序的网页文件夹
-  --conf #配置文件文件夹
-    --conf.yml #配置文件
-  --db #sqlite3 #数据库文件夹
-    --rtsp2rtmp.db #sqlite3数据库文件（存放摄像头的url、推送的rtmp服务器地址等信息）
-  --output #程序输出文件夹
-    --live #保存摄像头录像的文件夹，录像格式为flv
-    --log #程序输出的日志文件夹
-```
+1. 音视频编解码使用的是[开源项目](https://github.com/deepch/vdk.git)的功能
+2. 服务器连接到摄像头，服务器获取到音视频数据，解析为av.packet，分发给FileFlvManager和HttpFlvManager处理
+3. FileFlvManager将数据封装为flv文件的数据格式，写入文件
+4. RtmpFlvManager将数据封装为rtmp流的数据格式，发送到rtmp服务器
+5. 用户通过http方式和服务器连接请求视频数据，HttpFlvManager将av.packet封装为httpflv格式数据返回
 
 ##### 配置说明：
 
@@ -52,7 +34,7 @@ server:
 
 ##### 开发说明：
 
-程序分为服务器和页面，服务端采用golang开发，前端采用react+materia-ui，完成后编译页面文件放入服务器的statics文件夹
+程序分为服务器和页面，服务端采用golang开发，前端采用react+materia-ui，完成后编译页面文件放入服务器的static文件夹
 
 ###### 服务器开发说明：
 

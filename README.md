@@ -56,7 +56,7 @@ server:
 
 ###### 服务器开发说明：
 
-1. 安装golang，gc++编译器(sqlite3模块的需要用到，window下可选择安装MinGW)
+1. 安装golang，MinGW(sqlite3模块的使用到的cgo,window下开发需要使用，window下可选择安装MinGW)
 2. 获取[服务器源码](https://github.com/hkmadao/rtsp2rtmp.git)
 3. 进入项目目录
 4. go build开发

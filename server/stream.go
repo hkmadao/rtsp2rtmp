@@ -70,9 +70,9 @@ func (s *Server) ServeStreams() {
 				pRtmpFlvDone := make(chan interface{})
 				pFlvFileDone := make(chan interface{})
 				pHttpFlvDone := make(chan interface{})
-				pRtmpFlvChan := make(chan av.Packet)
-				pFlvFileChan := make(chan av.Packet)
-				pHttpFlvChan := make(chan av.Packet)
+				pRtmpFlvChan := make(chan av.Packet, 10)
+				pFlvFileChan := make(chan av.Packet, 10)
+				pHttpFlvChan := make(chan av.Packet, 10)
 				rm := &RtspManager{
 					ffm:          fileflv.NewFileFlvManager(),
 					hfm:          httpflv.NewHttpFlvManager(),
@@ -115,6 +115,11 @@ func (s *Server) ServeStreams() {
 }
 
 func writeChan(pkt av.Packet, c chan<- av.Packet, done <-chan interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			rlog.Log.Printf("writeChan painc : %v", r)
+		}
+	}()
 	select {
 	case c <- pkt:
 	case <-time.After(1 * time.Millisecond):
