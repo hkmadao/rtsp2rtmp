@@ -143,7 +143,7 @@ func (r *RtspManager) pktTransfer(code string, codecs []av.CodecData) {
 	go r.startRtmpClient(code, codecs)
 	go r.hfm.FlvWrite(code, codecs, r.pHttpFlvDone, r.pHttpFlvChan)
 	save, err := conf.GetBool("server.fileflv.save")
-	if err != nil && save {
+	if err != nil {
 		rlog.Log.Printf("get server.fileflv.save error : %v", err)
 		return
 	}
@@ -157,14 +157,12 @@ func (r *RtspManager) startRtmpClient(code string, codecs []av.CodecData) {
 	for {
 		if r.frm.IsStop() {
 			select {
-			case r.pFlvFileDone <- nil: //结束上一个goroutine
+			case r.pRtmpFlvDone <- nil: //结束上一个goroutine
 			case <-time.After(1 * time.Millisecond):
 			}
 			go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
 		}
 		select {
-		case <-r.pRtmpFlvDone:
-			return
 		case <-time.After(30 * time.Second):
 		}
 	}

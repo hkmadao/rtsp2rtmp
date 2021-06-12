@@ -73,7 +73,7 @@ func (fm *RtmpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 		case pkt := <-pchan:
 			if fm.fw.isStart && fm.fw.errTime < 10 {
 				if err := fm.fw.conn.WritePacket(pkt); err != nil {
-					rlog.Log.Printf("writer packet to flv file error : %v\n", err)
+					rlog.Log.Printf("writer packet to rtmp server error : %v\n", err)
 					fm.fw.errTime = fm.fw.errTime + 1
 					continue
 				}
@@ -83,12 +83,12 @@ func (fm *RtmpFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 			if pkt.IsKeyFrame && fm.fw.errTime < 10 {
 				err := fm.fw.conn.WriteHeader(fm.fw.codecs)
 				if err != nil {
-					rlog.Log.Printf("writer header to flv file error : %v\n", err)
+					rlog.Log.Printf("writer header to rtmp server error : %v\n", err)
 				}
 				fm.fw.isStart = true
 				err = fm.fw.conn.WritePacket(pkt)
 				if err != nil {
-					rlog.Log.Printf("writer packet to flv file error : %v\n", err)
+					rlog.Log.Printf("writer packet to rtmp server error : %v\n", err)
 					fm.fw.errTime = fm.fw.errTime + 1
 					continue
 				}
