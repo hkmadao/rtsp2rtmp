@@ -21,6 +21,6 @@ func init() {
 		log.Println("open file error :", err)
 	}
 	Log = log.New(lfile, "", log.Llongfile|log.Lmicroseconds|log.Ldate)
-	Log = log.New(log.Default().Writer(), "", log.Llongfile|log.Lmicroseconds|log.Ldate)
+	// Log = log.New(log.Default().Writer(), "", log.Llongfile|log.Lmicroseconds|log.Ldate)
 	Log.Printf("test message : %s", "message")
 }

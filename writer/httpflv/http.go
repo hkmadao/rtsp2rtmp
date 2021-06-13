@@ -17,7 +17,7 @@ import (
 func ServeHTTP() error {
 	defer func() {
 		if r := recover(); r != nil {
-			rlog.Log.Printf("httpflv ServeHTTP pain %v", r)
+			rlog.Log.Printf("httpflv ServeHTTP panic %v", r)
 		}
 	}()
 	port, err := conf.GetInt("server.httpflv.port")
@@ -202,23 +202,30 @@ func cameraDelete(w http.ResponseWriter, r *http.Request) {
 
 func reciver(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	sessionId := time.Now().Format("20060102150405")
-	fw := &HttpFlvWriter{
-		sessionId:      sessionId,
-		isStart:        false,
-		responseWriter: w,
-	}
 	uri := strings.TrimSuffix(strings.TrimLeft(r.RequestURI, "/"), ".flv")
 	uris := strings.Split(uri, "/")
 	if len(uris) < 2 || uris[0] != "live" {
 		http.Error(w, "invalid path", http.StatusBadRequest)
 		return
 	}
-	hms[uris[1]].fws[sessionId] = fw
+	code := uris[1]
+	//管理员可以主动中断播放
 	done := make(chan interface{})
-	hms[uris[1]].fws[sessionId].done = done
-	<-done
-	rlog.Log.Printf("session %s exit", sessionId)
+	heartChan := AddHttpFlvPlayer(done, code, w)
+Loop:
+	for {
+		select {
+		case heart := <-heartChan:
+			if heart == 1 {
+				continue
+			}
+			break Loop
+		case <-time.After(10 * time.Second):
+			rlog.Log.Printf("player [%s] session [%s] timeout exit", code, r.RemoteAddr)
+			break Loop
+		}
+	}
+	rlog.Log.Printf("player [%s] session [%s] exit", code, r.RemoteAddr)
 }
 
 // func ServeHTTP() {

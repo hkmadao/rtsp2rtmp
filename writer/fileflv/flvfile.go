@@ -34,7 +34,7 @@ func (fm *FileFlvManager) codec(code string, codecs []av.CodecData) {
 func (fm *FileFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-chan interface{}, pchan <-chan av.Packet) {
 	defer func() {
 		if r := recover(); r != nil {
-			rlog.Log.Printf("FlvFileManager FlvWrite pain %v", r)
+			rlog.Log.Printf("FlvFileManager FlvWrite panic %v", r)
 		}
 	}()
 	fm.codec(code, codecs)
@@ -52,12 +52,12 @@ func (fm *FileFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 			}
 			fdOld := fm.fw.fd
 			fm.fw.prepare = true
-			fm.fw.isStart = false
+			fm.fw.start = false
 			fm.fw.fd = fd
 			fm.fw.prepare = false
 			fdOld.Close()
 		case pkt := <-pchan:
-			if fm.fw.isStart {
+			if fm.fw.start {
 				if err := muxer.WritePacket(pkt); err != nil {
 					rlog.Log.Printf("writer packet to flv file error : %v\n", err)
 				}
@@ -71,7 +71,7 @@ func (fm *FileFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 				if err := muxer.WritePacket(pkt); err != nil {
 					rlog.Log.Printf("writer packet to flv file error : %v\n", err)
 				}
-				fm.fw.isStart = true
+				fm.fw.start = true
 			}
 		}
 	}
@@ -79,7 +79,7 @@ func (fm *FileFlvManager) FlvWrite(code string, codecs []av.CodecData, done <-ch
 
 type FileFlvWriter struct {
 	code    string
-	isStart bool
+	start   bool
 	prepare bool
 	fd      *os.File
 	codecs  []av.CodecData

@@ -26,7 +26,7 @@ func NewServer() *Server {
 func (s *Server) ServeStreams() {
 	defer func() {
 		if r := recover(); r != nil {
-			rlog.Log.Printf("rtspManager pain %v", r)
+			rlog.Log.Printf("rtspManager panic %v", r)
 		}
 	}()
 	es, err := dao.CameraSelectAll()
@@ -38,7 +38,7 @@ func (s *Server) ServeStreams() {
 		go func(c dao.Camera) {
 			defer func() {
 				if r := recover(); r != nil {
-					rlog.Log.Printf("rtspManager pain %v", r)
+					rlog.Log.Printf("rtspManager panic %v", r)
 				}
 			}()
 			for {
@@ -117,7 +117,7 @@ func (s *Server) ServeStreams() {
 func writeChan(pkt av.Packet, c chan<- av.Packet, done <-chan interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
-			rlog.Log.Printf("writeChan painc : %v", r)
+			rlog.Log.Printf("writeChan panicc : %v", r)
 		}
 	}()
 	select {
@@ -153,7 +153,12 @@ func (r *RtspManager) pktTransfer(code string, codecs []av.CodecData) {
 }
 
 func (r *RtspManager) startRtmpClient(code string, codecs []av.CodecData) {
-	go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
+	defer func() {
+		if r := recover(); r != nil {
+			rlog.Log.Printf("startRtmpClient panic %v", r)
+		}
+	}()
+	// go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
 	for {
 		if r.frm.IsStop() {
 			select {
@@ -162,8 +167,6 @@ func (r *RtspManager) startRtmpClient(code string, codecs []av.CodecData) {
 			}
 			go r.frm.FlvWrite(code, codecs, r.pRtmpFlvDone, r.pRtmpFlvChan)
 		}
-		select {
-		case <-time.After(30 * time.Second):
-		}
+		<-time.After(30 * time.Second)
 	}
 }
