@@ -36,7 +36,7 @@ func AddHttpFlvPlayer(code string, writer http.ResponseWriter) (endStream <-chan
 	hfw := NewHttpFlvWriter(hfm.done, hfm.code, hfm.codecs, writer, sessionId)
 	endStream = hfw.GetEndStream()
 	//one2two chan
-	heartbeatStream1, heartbeatStream2 := utils.Tee(endStream, hfw.GetHeartbeatStream())
+	heartbeatStream1, heartbeatStream2 := utils.Tee(endStream, hfw.GetHeartbeatStream(), 1*time.Millisecond)
 	wi := &writerInfo{
 		sessionId:       sessionId,
 		code:            code,
@@ -60,7 +60,7 @@ func monitor(wi *writerInfo) {
 	for {
 		select {
 		case <-wi.heartbeatStream:
-			return
+			continue
 		case <-wi.endStream:
 			//end info
 			if v, b := hfms.Load(wi.code); b {
@@ -68,13 +68,13 @@ func monitor(wi *writerInfo) {
 				hfm.wis.Delete(wi.sessionId)
 			}
 			return
-			// case <-time.After(10 * time.Second):
-			// 	//time out
-			// 	if v, b := hfms.Load(wi.code); b {
-			// 		hfm := v.(*HttpFlvManager)
-			// 		hfm.wis.Delete(wi.sessionId)
-			// 	}
-			// 	return
+		case <-time.After(10 * time.Second):
+			//time out
+			if v, b := hfms.Load(wi.code); b {
+				hfm := v.(*HttpFlvManager)
+				hfm.wis.Delete(wi.sessionId)
+			}
+			return
 		}
 	}
 }
@@ -126,7 +126,7 @@ func (hfm *HttpFlvManager) flvWrite() {
 					wi := value.(*writerInfo)
 					select {
 					case wi.pktStream <- pkt1:
-					case <-time.After(1 * time.Microsecond):
+					case <-time.After(1 * time.Millisecond):
 						// logs.Info("lose pkt")
 					}
 				}(pkt)

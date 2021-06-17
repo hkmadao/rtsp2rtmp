@@ -17,7 +17,8 @@ type RtmpFlvWriter struct {
 	codecs          []av.CodecData
 	start           bool
 	conn            *rtmp.Conn
-	heartbeatStream chan int
+	heartbeatStream chan interface{}
+	endStream       chan interface{}
 }
 
 func NewRtmpFlvWriter(done <-chan interface{}, pktStream <-chan av.Packet, code string, codecs []av.CodecData) *RtmpFlvWriter {
@@ -27,13 +28,15 @@ func NewRtmpFlvWriter(done <-chan interface{}, pktStream <-chan av.Packet, code 
 		code:            code,
 		codecs:          codecs,
 		start:           false,
-		heartbeatStream: make(chan int),
+		heartbeatStream: make(chan interface{}),
+		endStream:       make(chan interface{}),
 	}
-	go rfw.flvWrite()
+	go rfw.flvWrite(rfw.endStream, rfw.heartbeatStream)
+	go rfw.monitor(rfw.endStream, rfw.heartbeatStream)
 	return rfw
 }
 
-func (rfw *RtmpFlvWriter) Monitor() {
+func (rfw *RtmpFlvWriter) monitor(endStream <-chan interface{}, heartbeatStream <-chan interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
@@ -42,12 +45,13 @@ func (rfw *RtmpFlvWriter) Monitor() {
 
 	for {
 		select {
-		case heartbeat := <-rfw.heartbeatStream:
-			if heartbeat != 1 {
-				go rfw.flvWrite()
-				return
-			}
+		case <-endStream:
+			return
 		case <-rfw.done:
+			err := rfw.conn.Close()
+			if err != nil {
+				logs.Error("close rtmp client connection error : %v", err)
+			}
 			return
 		case <-time.After(10 * time.Second):
 			logs.Error("rtmp cliect time out , close")
@@ -55,7 +59,11 @@ func (rfw *RtmpFlvWriter) Monitor() {
 			if err != nil {
 				logs.Error("close rtmp client connection error : %v", err)
 			}
-			go rfw.flvWrite()
+			rfw.start = false
+			go rfw.flvWrite(rfw.endStream, rfw.heartbeatStream)
+			continue
+		case <-heartbeatStream:
+			continue
 		}
 
 	}
@@ -78,13 +86,12 @@ func (rfw *RtmpFlvWriter) createConn() {
 }
 
 //Write extends to writer.Writer
-func (rfw *RtmpFlvWriter) flvWrite() {
+func (rfw *RtmpFlvWriter) flvWrite(endStream chan<- interface{}, heartbeatStream chan<- interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
-	rfw.createConn()
 	for {
 		select {
 		case <-rfw.done:
@@ -99,7 +106,8 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 					logs.Error("writer packet to rtmp server error : %v\n", err)
 					select {
 					case rfw.heartbeatStream <- 0:
-					case <-time.After(1 * time.Microsecond):
+					case <-time.After(1 * time.Millisecond):
+						logs.Error("send heartbeat timeout")
 					}
 					err := rfw.conn.Close()
 					if err != nil {
@@ -109,17 +117,20 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 				}
 				select {
 				case rfw.heartbeatStream <- 1:
-				case <-time.After(1 * time.Microsecond):
+				case <-time.After(1 * time.Millisecond):
+					logs.Error("send heartbeat timeout")
 				}
-				return
+				continue
 			}
 			if pkt.IsKeyFrame {
+				rfw.createConn()
 				err := rfw.conn.WriteHeader(rfw.codecs)
 				if err != nil {
 					logs.Error("writer header to rtmp server error : %v\n", err)
 					select {
 					case rfw.heartbeatStream <- 0:
-					case <-time.After(1 * time.Microsecond):
+					case <-time.After(1 * time.Millisecond):
+						logs.Error("send heartbeat timeout")
 					}
 					err := rfw.conn.Close()
 					if err != nil {
@@ -133,7 +144,8 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 					logs.Error("writer packet to rtmp server error : %v\n", err)
 					select {
 					case rfw.heartbeatStream <- 0:
-					case <-time.After(1 * time.Microsecond):
+					case <-time.After(1 * time.Millisecond):
+						logs.Error("send heartbeat timeout")
 					}
 					err := rfw.conn.Close()
 					if err != nil {
@@ -143,8 +155,10 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 				}
 				select {
 				case rfw.heartbeatStream <- 1:
-				case <-time.After(1 * time.Microsecond):
+				case <-time.After(1 * time.Millisecond):
+					logs.Error("send heartbeat timeout")
 				}
+				continue
 			}
 		}
 	}

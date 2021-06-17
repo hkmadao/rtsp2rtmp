@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/yumrano/rtsp2rtmp/models"
@@ -107,11 +108,11 @@ Loop:
 			logs.Info("player [%s] addr [%s] end", code, req.RemoteAddr)
 			break Loop
 		case <-heartbeatStream:
-			logs.Info("player [%s] addr [%s] continue", code, req.RemoteAddr)
+			// logs.Info("player [%s] addr [%s] continue", code, req.RemoteAddr)
 			continue
-			// case <-time.After(10 * time.Second):
-			// 	logs.Info("player [%s] addr [%s] timeout", code, req.RemoteAddr)
-			// 	break Loop
+		case <-time.After(10 * time.Second):
+			logs.Info("player [%s] addr [%s] timeout", code, req.RemoteAddr)
+			break Loop
 		}
 	}
 	logs.Info("player [%s] addr [%s] exit", code, req.RemoteAddr)

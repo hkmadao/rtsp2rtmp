@@ -147,7 +147,9 @@ func CameraEdit(w http.ResponseWriter, req *http.Request) {
 	camera, _ := models.CameraSelectById(q.Id)
 	camera.Code = q.Code
 	camera.AuthCode = q.AuthCode
-	camera.Enabled = q.Enabled
+	camera.RtmpURL = q.RtmpURL
+	camera.RtspURL = q.RtspURL
+	// camera.Enabled = q.Enabled
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("camera insert error : %v", err)

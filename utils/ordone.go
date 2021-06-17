@@ -1,5 +1,11 @@
 package utils
 
+import (
+	"time"
+
+	"github.com/beego/beego/v2/core/logs"
+)
+
 func OrDone(done, c <-chan interface{}) <-chan interface{} {
 	valStream := make(chan interface{})
 	go func() {
@@ -22,7 +28,7 @@ func OrDone(done, c <-chan interface{}) <-chan interface{} {
 	return valStream
 }
 
-func Tee(done <-chan interface{}, in <-chan interface{}) (<-chan interface{}, <-chan interface{}) {
+func Tee(done <-chan interface{}, in <-chan interface{}, timeout time.Duration) (<-chan interface{}, <-chan interface{}) {
 	out1 := make(chan interface{})
 	out2 := make(chan interface{})
 	go func() {
@@ -38,6 +44,8 @@ func Tee(done <-chan interface{}, in <-chan interface{}) (<-chan interface{}, <-
 					out1 = nil // 置空阻塞机制完成select轮询
 				case out2 <- val:
 					out2 = nil
+				case <-time.After(timeout): //设置超时发送时间，防止发送阻塞
+					logs.Error("Tee timeout")
 				}
 			}
 		}

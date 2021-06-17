@@ -130,6 +130,7 @@ func (s *Server) connRtsp(code string) {
 				logs.Error("camera [%s] ReadPacket : %v", c.Code, err)
 				break
 			}
+			//不能开goroutine,不能保证包的顺序
 			writeChan(pkt, rm.rfPktStream, rm.rfPktDone, "rfp")
 			writeChan(pkt, rm.ffPktStream, rm.ffPktDone, "ffp")
 			writeChan(pkt, rm.hfPktStream, rm.hfPktDone, "hfp")
@@ -165,7 +166,7 @@ func writeChan(pkt av.Packet, c chan<- av.Packet, done <-chan interface{}, t str
 	}()
 	select {
 	case c <- pkt:
-	case <-time.After(1 * time.Microsecond):
+	case <-time.After(1 * time.Millisecond):
 		// if t == "hfp" {
 		// 	logs.Info("lose pkt %s", t)
 		// }
