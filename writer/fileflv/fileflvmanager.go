@@ -1,4 +1,4 @@
-package rtmpflv
+package fileflv
 
 import (
 	"runtime/debug"
@@ -7,29 +7,29 @@ import (
 	"github.com/deepch/vdk/av"
 )
 
-type RtmpFlvManager struct {
+type FileFlvManager struct {
 	done      <-chan interface{}
 	pktStream <-chan av.Packet
 	code      string
 	codecs    []av.CodecData
 }
 
-func NewRtmpFlvManager(done <-chan interface{}, pktStream <-chan av.Packet, code string, codecs []av.CodecData) *RtmpFlvManager {
-	rfm := &RtmpFlvManager{
+func NewFileFlvManager(done <-chan interface{}, pktStream <-chan av.Packet, code string, codecs []av.CodecData) *FileFlvManager {
+	ffm := &FileFlvManager{
 		done:      done,
 		pktStream: pktStream,
 		code:      code,
 		codecs:    codecs,
 	}
-	go rfm.flvWrite()
-	return rfm
+	go ffm.flvWrite()
+	return ffm
 }
 
-func (rfm *RtmpFlvManager) flvWrite() {
+func (ffm *FileFlvManager) flvWrite() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
-	NewRtmpFlvWriter(rfm.done, rfm.pktStream, rfm.code, rfm.codecs)
+	NewFileFlvWriter(ffm.done, ffm.pktStream, ffm.code, ffm.codecs)
 }
