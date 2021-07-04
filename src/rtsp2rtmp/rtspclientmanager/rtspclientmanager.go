@@ -92,92 +92,87 @@ func (s *RtspClientManager) serveStreams() {
 
 func (s *RtspClientManager) connRtsp(code string) {
 	defer func() {
+		s.rcs.Delete(code)
+		s.conns.Delete(code)
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
 	//放置信息表示已经开始
 	s.rcs.Store(code, struct{}{})
-	for {
-		q := models.Camera{Code: code}
-		c, err := models.CameraSelectOne(q)
-		if err != nil {
-			logs.Error("find camera [%s] error : %v", code, err)
-			return
-		}
-		if c.Enabled != 1 {
-			logs.Error("camera [%s] disabled : %v", code)
-			return
-		}
-		logs.Info(c.Code, "connect", c.RtspURL)
-		rtsp.DebugRtsp = false
-		session, err := rtsp.Dial(c.RtspURL)
-		if err != nil {
-			logs.Error("camera [%s] conn : %v", c.Code, err)
-			c.OnlineStatus = 0
-			time.Sleep(5 * time.Second)
-			if c.OnlineStatus == 1 {
-				models.CameraUpdate(c)
-			}
-			return
-		}
-		session.RtpKeepAliveTimeout = 10 * time.Second
-		codecs, err := session.Streams()
-		if err != nil {
-			logs.Error("camera [%s] get streams : %v", c.Code, err)
-			time.Sleep(5 * time.Second)
-			return
-		}
-
-		c.OnlineStatus = 1
-		models.CameraUpdate(c)
-
-		done := make(chan interface{})
-		//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-		pktStream := make(chan av.Packet, 50)
-		defer func() {
-			close(done)
-			close(pktStream)
-		}()
-
-		rc := rtspclient.NewRtspClient(done, pktStream, code, codecs, s)
-		s.rcs.Store(code, rc)
-		s.conns.Store(code, session)
-		for {
-			pkt, err := session.ReadPacket()
-			if err != nil {
-				logs.Error("camera [%s] ReadPacket : %v", c.Code, err)
-				break
-			}
-			//不能开goroutine,不能保证包的顺序
-			select {
-			case pktStream <- pkt:
-			default:
-				//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-				logs.Debug("rtmpserver lose packet")
-			}
-		}
-
-		if err != nil {
-			logs.Error("session Close error : %v", err)
-		}
-		//offline camera
-		camera, err := models.CameraSelectOne(q)
-		if err != nil {
-			logs.Error("no camera error : %s", code)
-		} else {
-			camera.OnlineStatus = 0
-			models.CameraUpdate(camera)
-		}
-
-		s.rcs.Delete(code)
-		s.conns.Delete(code)
-		err = session.Close()
-		if err != nil {
-			logs.Error("close conn error : %v", err)
-		}
-		logs.Info("camera [%s] reconnect wait 5s", c.Code)
+	q := models.Camera{Code: code}
+	c, err := models.CameraSelectOne(q)
+	if err != nil {
+		logs.Error("find camera [%s] error : %v", code, err)
+		return
+	}
+	if c.Enabled != 1 {
+		logs.Error("camera [%s] disabled : %v", code)
+		return
+	}
+	logs.Info(c.Code, "connect", c.RtspURL)
+	rtsp.DebugRtsp = false
+	session, err := rtsp.Dial(c.RtspURL)
+	if err != nil {
+		logs.Error("camera [%s] conn : %v", c.Code, err)
+		c.OnlineStatus = 0
 		time.Sleep(5 * time.Second)
+		if c.OnlineStatus == 1 {
+			models.CameraUpdate(c)
+		}
+		return
+	}
+	session.RtpKeepAliveTimeout = 10 * time.Second
+	codecs, err := session.Streams()
+	if err != nil {
+		logs.Error("camera [%s] get streams : %v", c.Code, err)
+		return
+	}
+
+	c.OnlineStatus = 1
+	models.CameraUpdate(c)
+
+	done := make(chan interface{})
+	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
+	pktStream := make(chan av.Packet, 50)
+	defer func() {
+		close(done)
+		close(pktStream)
+	}()
+
+	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs, s)
+	s.rcs.Store(code, rc)
+	s.conns.Store(code, session)
+	for {
+		pkt, err := session.ReadPacket()
+		if err != nil {
+			logs.Error("camera [%s] ReadPacket : %v", c.Code, err)
+			break
+		}
+		//不能开goroutine,不能保证包的顺序
+		select {
+		case pktStream <- pkt:
+		default:
+			//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
+			logs.Debug("rtmpserver lose packet")
+		}
+	}
+
+	if err != nil {
+		logs.Error("session Close error : %v", err)
+	}
+	//offline camera
+	camera, err := models.CameraSelectOne(q)
+	if err != nil {
+		logs.Error("no camera error : %s", code)
+	} else {
+		camera.OnlineStatus = 0
+		models.CameraUpdate(camera)
+	}
+
+	err = session.Close()
+	if err != nil {
+		logs.Error("close conn error : %v", err)
 	}
 }
 
