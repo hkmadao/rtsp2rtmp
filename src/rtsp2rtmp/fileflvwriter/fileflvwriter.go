@@ -94,24 +94,10 @@ func (ffw *FileFlvWriter) splitFile() {
 		case <-ffw.selfDone:
 			return
 		case <-time.After(1 * time.Hour):
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
-					}
-				}()
-				//有多个地方监听seleDone,需要写入多次才能退出多个goroutine
-				for i := 0; i < 10; i++ {
-					select {
-					case ffw.selfDone <- struct{}{}:
-					default:
-					}
-				}
-				ffw.fd.Close()
-			}()
+			ffw.StopWrite()
 			ffwn := NewFileFlvWriter(ffw.pktStream, ffw.code, ffw.codecs, ffw.iffm)
 			ffwn.iffm.UpdateFFWS(ffwn.code, ffwn)
-			continue
+			return
 		}
 	}
 }
@@ -150,7 +136,6 @@ func (ffw *FileFlvWriter) flvWrite() {
 		logs.Error("create file flv error : %v", err)
 		return
 	}
-	defer close(ffw.selfDone)
 	defer ffw.fd.Close()
 	muxer := flv.NewMuxer(ffw)
 	for pkt := range utils.OrDonePacket(ffw.selfDone, ffw.pktStream) {

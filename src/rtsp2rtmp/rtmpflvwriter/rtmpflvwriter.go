@@ -89,11 +89,13 @@ func (rfw *RtmpFlvWriter) monitor() {
 				logs.Debug("heartbeat")
 				continue
 			}
+			rfw.StopWrite()
 			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
 			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
 			return
 		case <-time.After(2 * rfw.pulseInterval):
 			//time out
+			rfw.StopWrite()
 			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
 			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
 			return
@@ -121,7 +123,6 @@ func (rfw *RtmpFlvWriter) createConn() error {
 //Write extends to writer.Writer
 func (rfw *RtmpFlvWriter) flvWrite() {
 	defer func() {
-		close(rfw.heartbeatStream)
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
@@ -155,8 +156,11 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 	}(done)
 
 	ticker := time.NewTicker(rfw.pulseInterval)
-	defer close(rfw.selfDone)
-	defer rfw.conn.Close()
+	defer func() {
+		if rfw.conn != nil {
+			rfw.conn.Close()
+		}
+	}()
 	pktStream := utils.OrDonePacket(rfw.selfDone, rfw.pktStream)
 	for {
 		select {
@@ -170,7 +174,6 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 			}
 			ticker.Reset(rfw.pulseInterval)
 		}
-
 	}
 }
 
