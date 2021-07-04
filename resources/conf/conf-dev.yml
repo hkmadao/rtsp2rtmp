@@ -12,8 +12,8 @@ server:
         path: ./resources/output/log
         level: 6
     database:
-        driver-type: 4
-        driver: postgres
-        url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC
+        driver-type: 2
+        driver: sqlite3
+        url: ./resources/db/rtsp2rtmp.db
         show-sql: false
         

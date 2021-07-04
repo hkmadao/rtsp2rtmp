@@ -8,7 +8,7 @@ else
     exit 1
 fi
 #打多个平台的包
-platforms="windows_amd64 linux_amd64 linux_arm"
+platforms="linux_amd64"
 rm -rf ./resources/output/releases/
 for platform in $platforms; do
 
