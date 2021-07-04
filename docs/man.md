@@ -22,26 +22,38 @@
 
 ```
 server:
+    user:
+        name: admin #网页登录用户名
+        password: admin #网页登录密码
+    rtmp:
     httpflv:
-        port: 8080 #程序的http端口
+        port: 8080
+        static:
+            path: ./resources/static #页面所在文件夹
     fileflv:
-        save: true #是否保存录像文件
-        path: ./output/live #录像文件夹
+        path: ./resources/output/live #录像所在文件夹
     log:
-        path: ./output/log #日志文件夹
-        
+        path: ./resources/output/log #日志所在文件夹  
+        level: 6 #1-7 7输出的信息最多 
+    database:
+        driver-type: 4 #数据库类型
+        driver: postgres #数据库驱动
+        url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC #数据库url
+        show-sql: false     #是否打印sql                
 ```
 
 ##### 开发说明：
 
-程序分为服务器和页面，服务端采用golang开发，前端采用react+materia-ui，完成后编译页面文件放入服务器的static文件夹
+程序分为服务器和页面，服务端采用golang开发，前端采用react+materia-ui，完成后编译页面文件放入服务器的resources/static文件夹,或者修改配置文件页面所在文件夹的路径
 
 ###### 服务器开发说明：
 
-1. 安装golang，gc++编译器(sqlite3模块的需要用到，window下可选择安装MinGW)
+1. 安装golang
 2. 获取[服务器源码](https://github.com/hkmadao/rtsp2rtmp.git)
-3. 进入项目目录
-4. go build开发
+3. 安装postgresql数据库，根据配置文件"resources/conf/conf-prod.yml"创建数据库
+4. 根据"docs/init/rtsp2rtmp-postgresql.sql"文件创建表    
+5. 进入项目目录
+6. go build开发
 
 ###### 页面开发说明：
 

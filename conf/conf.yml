@@ -1,9 +1,0 @@
-server:
-    httpflv:
-        port: 8080
-    fileflv:
-        save: true
-        path: ./output/live
-    log:
-        path: ./output/log
-        

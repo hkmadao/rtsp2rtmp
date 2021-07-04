@@ -1,0 +1,19 @@
+server:
+    user:
+        name: admin
+        password: admin
+    http:
+        port: 8080
+        static:
+            path: D:\development\project\rtsp2rtmp-web\build
+    fileflv:
+        path: ./resources/output/live
+    log:
+        path: ./resources/output/log
+        level: 6
+    database:
+        driver-type: 4
+        driver: postgres
+        url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC
+        show-sql: false
+        
