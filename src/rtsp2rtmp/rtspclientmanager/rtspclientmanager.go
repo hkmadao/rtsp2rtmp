@@ -7,7 +7,6 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
-	"github.com/deepch/vdk/format/rtmp"
 	"github.com/deepch/vdk/format/rtsp"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/controllers"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
@@ -50,10 +49,15 @@ func (rc *RtspClientManager) ExistsPublisher(code string) bool {
 }
 
 func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+		}
+	}()
 	for code := range codeStream {
 		v, b := rs.conns.Load(code)
 		if b {
-			r := v.(*rtmp.Conn)
+			r := v.(*rtsp.Client)
 			err := r.Close()
 			if err != nil {
 				logs.Error("camera [%s] close error : %v", code, err)

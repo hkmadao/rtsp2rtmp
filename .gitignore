@@ -3,5 +3,6 @@ lastupdate.tmp
 resources/output/live/*.flv
 resources/output/log/*.log
 resources/output/releases
+resources/output/demo
 .idea
 .vscode
