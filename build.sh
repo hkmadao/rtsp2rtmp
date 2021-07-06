@@ -1,5 +1,6 @@
 #!/bin/bash
 #./build.sh 0.0.1
+#vscode每次保存会将linux换行符替换为window换行符，如果此文件不能执行，请自行替换换行符
 ver=$1
 if [ -n "${ver}" ]; then
     echo package version "${ver}"
