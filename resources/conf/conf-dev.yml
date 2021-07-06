@@ -5,7 +5,7 @@ server:
     http:
         port: 8080
         static:
-            path: D:\development\project\rtsp2rtmp-web\build
+            path: ./resources/static
     fileflv:
         path: ./resources/output/live
     log:
