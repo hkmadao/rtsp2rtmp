@@ -60,7 +60,7 @@ func HttpFlvPlay(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, r)
 			return
 		}
-		if time.Now().After(cs.Created.Add(7 * 24 * time.Hour)) {
+		if time.Now().Before(cs.StartTime) || time.Now().After(cs.Deadline) {
 			logs.Error("camera [%s] AuthCodeTemp expired : %s", camera.Code, authCode)
 			r.Code = 0
 			r.Msg = "authCode expired"
