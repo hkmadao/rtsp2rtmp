@@ -30,7 +30,7 @@ func GetSingleHttpflvAdmin() *HttpflvAdmin {
 // }
 
 func (hfa *HttpflvAdmin) AddHttpFlvManager(
-	pktStream <-chan av.Packet,
+	pktStream <-chan *av.Packet,
 	code string,
 	codecs []av.CodecData,
 ) {

@@ -21,7 +21,7 @@ func GetSingleRtmpFlvManager() *rtmpFlvManager {
 	return rfmInstance
 }
 
-func (rfm *rtmpFlvManager) FlvWrite(pktStream <-chan av.Packet, code string, codecs []av.CodecData) {
+func (rfm *rtmpFlvManager) FlvWrite(pktStream <-chan *av.Packet, code string, codecs []av.CodecData) {
 	ffw := rtmpflvwriter.NewRtmpFlvWriter(pktStream, code, codecs, rfm)
 	rfm.rfms.Store(code, ffw)
 }

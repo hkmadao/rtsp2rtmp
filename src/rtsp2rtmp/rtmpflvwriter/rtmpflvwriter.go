@@ -17,7 +17,7 @@ type IRtmpFlvManager interface {
 
 type RtmpFlvWriter struct {
 	selfDone        chan interface{}
-	pktStream       <-chan av.Packet
+	pktStream       <-chan *av.Packet
 	code            string
 	codecs          []av.CodecData
 	start           bool
@@ -27,7 +27,7 @@ type RtmpFlvWriter struct {
 	irfm            IRtmpFlvManager
 }
 
-func (rfw *RtmpFlvWriter) GetPktStream() <-chan av.Packet {
+func (rfw *RtmpFlvWriter) GetPktStream() <-chan *av.Packet {
 	return rfw.pktStream
 }
 
@@ -35,7 +35,7 @@ func (rfw *RtmpFlvWriter) GetCodecs() []av.CodecData {
 	return rfw.codecs
 }
 
-func NewRtmpFlvWriter(pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
+func NewRtmpFlvWriter(pktStream <-chan *av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
 	rfw := &RtmpFlvWriter{
 		selfDone:        make(chan interface{}, 10),
 		pktStream:       pktStream,
@@ -177,9 +177,9 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 	}
 }
 
-func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
+func (rfw *RtmpFlvWriter) writerPacket(pkt *av.Packet) error {
 	if rfw.start {
-		if err := rfw.conn.WritePacket(pkt); err != nil {
+		if err := rfw.conn.WritePacket(*pkt); err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
 			return err
 		}
@@ -197,7 +197,7 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
 			return err
 		}
 		rfw.start = true
-		err = rfw.conn.WritePacket(pkt)
+		err = rfw.conn.WritePacket(*pkt)
 		if err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
 			return err

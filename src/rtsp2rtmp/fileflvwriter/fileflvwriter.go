@@ -19,7 +19,7 @@ type IFileFlvManager interface {
 
 type FileFlvWriter struct {
 	selfDone  chan interface{}
-	pktStream <-chan av.Packet
+	pktStream <-chan *av.Packet
 	code      string
 	codecs    []av.CodecData
 	isStart   bool
@@ -27,7 +27,7 @@ type FileFlvWriter struct {
 	iffm      IFileFlvManager
 }
 
-func (ffw *FileFlvWriter) GetPktStream() <-chan av.Packet {
+func (ffw *FileFlvWriter) GetPktStream() <-chan *av.Packet {
 	return ffw.pktStream
 }
 
@@ -36,7 +36,7 @@ func (ffw *FileFlvWriter) GetCodecs() []av.CodecData {
 }
 
 func NewFileFlvWriter(
-	pktStream <-chan av.Packet,
+	pktStream <-chan *av.Packet,
 	code string,
 	codecs []av.CodecData,
 	iffm IFileFlvManager,
@@ -140,7 +140,7 @@ func (ffw *FileFlvWriter) flvWrite() {
 	muxer := flv.NewMuxer(ffw)
 	for pkt := range utils.OrDonePacket(ffw.selfDone, ffw.pktStream) {
 		if ffw.isStart {
-			if err := muxer.WritePacket(pkt); err != nil {
+			if err := muxer.WritePacket(*pkt); err != nil {
 				logs.Error("writer packet to flv file error : %v", err)
 			}
 			continue
@@ -150,7 +150,7 @@ func (ffw *FileFlvWriter) flvWrite() {
 			if err != nil {
 				logs.Error("writer header to flv file error : %v", err)
 			}
-			if err := muxer.WritePacket(pkt); err != nil {
+			if err := muxer.WritePacket(*pkt); err != nil {
 				logs.Error("writer packet to flv file error : %v", err)
 			}
 			ffw.isStart = true

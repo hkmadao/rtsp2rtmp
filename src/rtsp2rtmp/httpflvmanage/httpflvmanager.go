@@ -15,13 +15,13 @@ import (
 
 type HttpFlvManager struct {
 	selfDone  chan interface{}
-	pktStream <-chan av.Packet
+	pktStream <-chan *av.Packet
 	code      string
 	codecs    []av.CodecData
 	hfws      sync.Map
 }
 
-func (ffw *HttpFlvManager) GetPktStream() <-chan av.Packet {
+func (ffw *HttpFlvManager) GetPktStream() <-chan *av.Packet {
 	return ffw.pktStream
 }
 
@@ -29,7 +29,7 @@ func (ffw *HttpFlvManager) GetCodecs() []av.CodecData {
 	return ffw.codecs
 }
 
-func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.CodecData) *HttpFlvManager {
+func NewHttpFlvManager(pktStream <-chan *av.Packet, code string, codecs []av.CodecData) *HttpFlvManager {
 	hfm := &HttpFlvManager{
 		selfDone:  make(chan interface{}, 10),
 		pktStream: pktStream,
@@ -98,7 +98,7 @@ func (hfm *HttpFlvManager) AddHttpFlvPlayer(
 ) (<-chan interface{}, error) {
 	sessionId := utils.NextValSnowflakeID()
 	//添加缓冲，减少包到达速率震荡导致丢包
-	pktStream := make(chan av.Packet, 1024)
+	pktStream := make(chan *av.Packet, 1024)
 	hfw := httpflvwriter.NewHttpFlvWriter(playerDone, pulseInterval, pktStream, hfm.code, hfm.codecs, writer, sessionId, hfm)
 	hfm.hfws.Store(sessionId, hfw)
 	return hfw.GetPlayerHeartbeatStream(), nil

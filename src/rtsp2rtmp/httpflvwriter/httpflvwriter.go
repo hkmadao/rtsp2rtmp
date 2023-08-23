@@ -20,7 +20,7 @@ type IHttpFlvManager interface {
 type HttpFlvWriter struct {
 	sessionId             int64
 	pulseInterval         time.Duration
-	pktStream             chan av.Packet
+	pktStream             chan *av.Packet
 	code                  string
 	codecs                []av.CodecData
 	start                 bool
@@ -41,11 +41,11 @@ func (hfw *HttpFlvWriter) SetCodecs(codecs []av.CodecData) {
 	hfw.codecs = codecs
 }
 
-func (hfw *HttpFlvWriter) GetPktStream() chan<- av.Packet {
+func (hfw *HttpFlvWriter) GetPktStream() chan<- *av.Packet {
 	return hfw.pktStream
 }
 
-// func (hfw *HttpFlvWriter) GetReadPktStream() <-chan av.Packet {
+// func (hfw *HttpFlvWriter) GetReadPktStream() <-chan *av.Packet {
 // 	return hfw.pktStream
 // }
 
@@ -56,7 +56,7 @@ func (hfw *HttpFlvWriter) GetSessionId() int64 {
 func NewHttpFlvWriter(
 	playerDone <-chan interface{},
 	pulseInterval time.Duration,
-	pktStream chan av.Packet,
+	pktStream chan *av.Packet,
 	code string,
 	codecs []av.CodecData,
 	writer io.Writer,
@@ -157,9 +157,9 @@ func (hfw *HttpFlvWriter) httpWrite() {
 	}
 
 }
-func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet) error {
+func (hfw *HttpFlvWriter) writerPacket(pkt *av.Packet) error {
 	if hfw.start {
-		if err := hfw.muxer.WritePacket(pkt); err != nil {
+		if err := hfw.muxer.WritePacket(*pkt); err != nil {
 			logs.Error("writer packet to httpflv error : %v", err)
 			return err
 		}
@@ -175,7 +175,7 @@ func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet) error {
 			return err
 		}
 		hfw.start = true
-		if err := hfw.muxer.WritePacket(pkt); err != nil {
+		if err := hfw.muxer.WritePacket(*pkt); err != nil {
 			logs.Error("writer packet to httpflv error : %v", err)
 			return err
 		}

@@ -16,22 +16,22 @@ type RtspClient struct {
 	code         string
 	codecs       []av.CodecData
 	connDone     <-chan interface{}
-	pktStream    <-chan av.Packet
-	ffmPktStream <-chan av.Packet
-	hfmPktStream <-chan av.Packet
-	rfmPktStream <-chan av.Packet
+	pktStream    <-chan *av.Packet
+	ffmPktStream <-chan *av.Packet
+	hfmPktStream <-chan *av.Packet
+	rfmPktStream <-chan *av.Packet
 	ircm         IRtspClientManager
 }
 
-func NewRtspClient(connDone <-chan interface{}, pktStream <-chan av.Packet, code string, codecs []av.CodecData, ircm IRtspClientManager) *RtspClient {
+func NewRtspClient(connDone <-chan interface{}, pktStream <-chan *av.Packet, code string, codecs []av.CodecData, ircm IRtspClientManager) *RtspClient {
 	r := &RtspClient{
 		connDone:     connDone,
 		pktStream:    pktStream,
 		code:         code,
 		codecs:       codecs,
-		ffmPktStream: make(chan av.Packet),
-		hfmPktStream: make(chan av.Packet),
-		rfmPktStream: make(chan av.Packet),
+		ffmPktStream: make(chan *av.Packet),
+		hfmPktStream: make(chan *av.Packet),
+		rfmPktStream: make(chan *av.Packet),
 		ircm:         ircm,
 	}
 	r.pktTransfer()
@@ -61,11 +61,11 @@ func (r *RtspClient) pktTransfer() {
 // 	return r.ffmPktStream, r.code, r.codecs
 // }
 
-func tee(done <-chan interface{}, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Packet, <-chan av.Packet) {
+func tee(done <-chan interface{}, in <-chan *av.Packet) (<-chan *av.Packet, <-chan *av.Packet, <-chan *av.Packet) {
 	//设置缓冲，调节前后速率
-	out1 := make(chan av.Packet, 50)
-	out2 := make(chan av.Packet, 50)
-	out3 := make(chan av.Packet, 50)
+	out1 := make(chan *av.Packet, 50)
+	out2 := make(chan *av.Packet, 50)
+	out3 := make(chan *av.Packet, 50)
 	go func() {
 		defer close(out1)
 		defer close(out2)
