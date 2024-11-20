@@ -14,14 +14,18 @@ import (
 )
 
 type HttpFlvManager struct {
-	selfDone  chan interface{}
-	pktStream <-chan *av.Packet
+	done      chan int
+	pktStream <-chan av.Packet
 	code      string
 	codecs    []av.CodecData
 	hfws      sync.Map
 }
 
-func (ffw *HttpFlvManager) GetPktStream() <-chan *av.Packet {
+func (ffw *HttpFlvManager) GetDone() <-chan int {
+	return ffw.done
+}
+
+func (ffw *HttpFlvManager) GetPktStream() <-chan av.Packet {
 	return ffw.pktStream
 }
 
@@ -29,9 +33,9 @@ func (ffw *HttpFlvManager) GetCodecs() []av.CodecData {
 	return ffw.codecs
 }
 
-func NewHttpFlvManager(pktStream <-chan *av.Packet, code string, codecs []av.CodecData) *HttpFlvManager {
+func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.CodecData) *HttpFlvManager {
 	hfm := &HttpFlvManager{
-		selfDone:  make(chan interface{}, 10),
+		done:      make(chan int),
 		pktStream: pktStream,
 		code:      code,
 		codecs:    codecs,
@@ -45,6 +49,14 @@ func NewHttpFlvManager(pktStream <-chan *av.Packet, code string, codecs []av.Cod
 		return hfm
 	}
 	if camera.Live != 1 {
+		go func() {
+			select {
+			case <-hfm.GetDone():
+				return
+			case <-hfm.pktStream:
+				return
+			}
+		}()
 		return hfm
 	}
 	go hfm.flvWrite()
@@ -58,13 +70,7 @@ func (hfm *HttpFlvManager) StopWrite() {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
-		//有多个地方监听seleDone,需要写入多次才能退出多个goroutine
-		for i := 0; i < 10; i++ {
-			select {
-			case hfm.selfDone <- struct{}{}:
-			default:
-			}
-		}
+		close(hfm.done)
 	}()
 }
 
@@ -75,7 +81,7 @@ func (hfm *HttpFlvManager) flvWrite() {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
-	for pkt := range utils.OrDonePacket(hfm.selfDone, hfm.pktStream) {
+	for pkt := range utils.OrDonePacket(hfm.done, hfm.pktStream) {
 		hfm.hfws.Range(func(key, value interface{}) bool {
 			wi := value.(*httpflvwriter.HttpFlvWriter)
 			select {
@@ -92,16 +98,16 @@ func (hfm *HttpFlvManager) flvWrite() {
 
 //添加播放者
 func (hfm *HttpFlvManager) AddHttpFlvPlayer(
-	playerDone <-chan interface{},
+	playerDone <-chan int,
 	pulseInterval time.Duration,
 	writer io.Writer,
-) (<-chan interface{}, error) {
+) (<-chan int, error) {
 	sessionId := utils.NextValSnowflakeID()
 	//添加缓冲，减少包到达速率震荡导致丢包
-	pktStream := make(chan *av.Packet, 1024)
-	hfw := httpflvwriter.NewHttpFlvWriter(playerDone, pulseInterval, pktStream, hfm.code, hfm.codecs, writer, sessionId, hfm)
+	pktStream := make(chan av.Packet, 1024)
+	hfw := httpflvwriter.NewHttpFlvWriter(hfm.GetDone(), playerDone, pulseInterval, pktStream, hfm.code, hfm.codecs, writer, sessionId, hfm)
 	hfm.hfws.Store(sessionId, hfw)
-	return hfw.GetPlayerHeartbeatStream(), nil
+	return hfw.GetDone(), nil
 }
 
 func (hfm *HttpFlvManager) DeleteHFW(sesessionId int64) {

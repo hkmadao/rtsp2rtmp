@@ -21,7 +21,7 @@ func GetSingleFileFlvManager() *fileFlvManager {
 	return ffmInstance
 }
 
-func (ffm *fileFlvManager) FlvWrite(pktStream <-chan *av.Packet, code string, codecs []av.CodecData) {
+func (ffm *fileFlvManager) FlvWrite(pktStream <-chan av.Packet, code string, codecs []av.CodecData) {
 	ffw := fileflvwriter.NewFileFlvWriter(pktStream, code, codecs, ffm)
 	ffm.ffws.Store(code, ffw)
 }

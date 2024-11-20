@@ -79,10 +79,10 @@ func HttpFlvPlay(c *gin.Context) {
 
 	logs.Info("player [%s] addr [%s] connecting", code, c.Request.RemoteAddr)
 	//管理员可以主动中断播放
-	playerDone := make(chan interface{})
+	playerDone := make(chan int)
 	defer close(playerDone)
 	const timeout = 10 * time.Second
-	heartbeatStream, err := flvmanage.GetSingleHttpflvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, c.Writer)
+	flvPlayerDone, err := flvmanage.GetSingleHttpflvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, c.Writer)
 	if err != nil {
 		logs.Error("camera [%s] add player error : %s", code, err)
 		r.Code = 0
@@ -90,20 +90,8 @@ func HttpFlvPlay(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, r)
 		return
 	}
-Loop:
-	for {
-		select {
-		case _, ok := <-heartbeatStream:
-			if ok {
-				logs.Debug("heartbeat")
-				continue
-			}
-			logs.Info("heartbeatStream closed")
-			break Loop
-		case <-time.After(timeout):
-			logs.Info("player [%s] addr [%s] timeout exit", code, c.Request.RemoteAddr)
-			break Loop
-		}
+	for range flvPlayerDone {
+		logs.Info("flvPlayerDone closed")
 	}
 	logs.Info("player [%s] addr [%s] exit", code, c.Request.RemoteAddr)
 }

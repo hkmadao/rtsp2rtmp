@@ -55,12 +55,16 @@ func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
+
 	for code := range codeStream {
 		v, b := rs.conns.Load(code)
 		if b {
 			r := v.(*rtspv2.RTSPClient)
 			r.Close()
 			logs.Info("camera [%s] close success", code)
+			rs.rcs.Delete(code)
+		} else {
+			logs.Error("codeStream error")
 		}
 	}
 }
@@ -117,6 +121,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		Debug:            false,
 		DialTimeout:      10 * time.Second,
 		ReadWriteTimeout: 10 * time.Second,
+		DisableAudio:     true,
 	}
 	session, err := rtspv2.Dial(ro)
 	if err != nil {
@@ -133,9 +138,9 @@ func (s *RtspClientManager) connRtsp(code string) {
 	c.OnlineStatus = 1
 	models.CameraUpdate(c)
 
-	done := make(chan interface{})
+	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-	pktStream := make(chan *av.Packet, 50)
+	pktStream := make(chan av.Packet, 50)
 	defer func() {
 		close(done)
 		close(pktStream)
@@ -145,13 +150,13 @@ func (s *RtspClientManager) connRtsp(code string) {
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
 	logs.Info("%s", string(session.SDPRaw))
-	for pkt := range utils.OrDonePacket(done, session.OutgoingPacketQueue) {
+	for pkt := range utils.OrDoneRefPacket(done, session.OutgoingPacketQueue) {
 		//不能开goroutine,不能保证包的顺序
 		select {
 		case pktStream <- pkt:
 		default:
 			//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-			logs.Debug("rtmpserver lose packet")
+			logs.Debug("rtspclient lose packet")
 		}
 	}
 
