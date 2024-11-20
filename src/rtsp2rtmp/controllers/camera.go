@@ -181,6 +181,9 @@ func CameraEnabled(c *gin.Context) {
 		return
 	}
 	camera.Enabled = q.Enabled
+	if q.Enabled != 1 {
+		camera.OnlineStatus = 0
+	}
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
@@ -190,7 +193,7 @@ func CameraEnabled(c *gin.Context) {
 		return
 	}
 	if q.Enabled != 1 {
-		//close camera conn
+		logs.Debug("close camera conn: %s", camera.Code)
 		select {
 		case codeStream <- camera.Code:
 		case <-time.After(1 * time.Second):

@@ -34,15 +34,6 @@ func (rfm *rtmpFlvManager) StopWrite(code string) {
 	}
 }
 
-func (rfm *rtmpFlvManager) StartWrite(code string) {
-	v, ok := rfm.rfms.Load(code)
-	if ok {
-		ffw := v.(*rtmpflvwriter.RtmpFlvWriter)
-		ffw.StopWrite()
-		rfm.FlvWrite(ffw.GetPktStream(), code, ffw.GetCodecs())
-	}
-}
-
 func (rfm *rtmpFlvManager) UpdateFFWS(code string, rfw *rtmpflvwriter.RtmpFlvWriter) {
 	_, ok := rfm.rfms.LoadAndDelete(code)
 	if ok {

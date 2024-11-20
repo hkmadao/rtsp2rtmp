@@ -7,10 +7,11 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
-	"github.com/deepch/vdk/format/rtsp"
+	"github.com/deepch/vdk/format/rtspv2"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/controllers"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclient"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 )
 
 var rcmInstance *RtspClientManager
@@ -54,16 +55,16 @@ func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
+
 	for code := range codeStream {
 		v, b := rs.conns.Load(code)
 		if b {
-			r := v.(*rtsp.Client)
-			err := r.Close()
-			if err != nil {
-				logs.Error("camera [%s] close error : %v", code, err)
-				continue
-			}
+			r := v.(*rtspv2.RTSPClient)
+			r.Close()
 			logs.Info("camera [%s] close success", code)
+			rs.rcs.Delete(code)
+		} else {
+			logs.Error("codeStream error")
 		}
 	}
 }
@@ -115,8 +116,14 @@ func (s *RtspClientManager) connRtsp(code string) {
 		return
 	}
 	logs.Info(c.Code, "connect", c.RtspURL)
-	rtsp.DebugRtsp = false
-	session, err := rtsp.Dial(c.RtspURL)
+	ro := rtspv2.RTSPClientOptions{
+		URL:              c.RtspURL,
+		Debug:            false,
+		DialTimeout:      10 * time.Second,
+		ReadWriteTimeout: 10 * time.Second,
+		DisableAudio:     true,
+	}
+	session, err := rtspv2.Dial(ro)
 	if err != nil {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
 		c.OnlineStatus = 0
@@ -126,17 +133,12 @@ func (s *RtspClientManager) connRtsp(code string) {
 		}
 		return
 	}
-	session.RtpKeepAliveTimeout = 10 * time.Second
-	codecs, err := session.Streams()
-	if err != nil {
-		logs.Error("camera [%s] get streams : %v", c.Code, err)
-		return
-	}
+	codecs := session.CodecData
 
 	c.OnlineStatus = 1
 	models.CameraUpdate(c)
 
-	done := make(chan interface{})
+	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
 	pktStream := make(chan av.Packet, 50)
 	defer func() {
@@ -147,18 +149,14 @@ func (s *RtspClientManager) connRtsp(code string) {
 	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs, s)
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
-	for {
-		pkt, err := session.ReadPacket()
-		if err != nil {
-			logs.Error("camera [%s] ReadPacket : %v", c.Code, err)
-			break
-		}
+	logs.Info("%s", string(session.SDPRaw))
+	for pkt := range utils.OrDoneRefPacket(done, session.OutgoingPacketQueue) {
 		//不能开goroutine,不能保证包的顺序
 		select {
 		case pktStream <- pkt:
 		default:
 			//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-			logs.Debug("rtmpserver lose packet")
+			logs.Debug("rtspclient lose packet")
 		}
 	}
 
@@ -174,10 +172,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		models.CameraUpdate(camera)
 	}
 
-	err = session.Close()
-	if err != nil {
-		logs.Error("close conn error : %v", err)
-	}
+	session.Close()
 }
 
 func (r *RtspClientManager) Load(key interface{}) (interface{}, bool) {

@@ -2,7 +2,7 @@ package utils
 
 import "github.com/deepch/vdk/av"
 
-func OrDonePacket(done <-chan interface{}, c <-chan av.Packet) <-chan av.Packet {
+func OrDonePacket(done <-chan int, c <-chan av.Packet) <-chan av.Packet {
 	valStream := make(chan av.Packet)
 	go func() {
 		defer close(valStream)
@@ -16,6 +16,28 @@ func OrDonePacket(done <-chan interface{}, c <-chan av.Packet) <-chan av.Packet 
 				}
 				select { // 防止写入阻塞
 				case valStream <- v:
+				case <-done:
+				}
+			}
+		}
+	}()
+	return valStream
+}
+
+func OrDoneRefPacket(done <-chan int, c <-chan *av.Packet) <-chan av.Packet {
+	valStream := make(chan av.Packet)
+	go func() {
+		defer close(valStream)
+		for {
+			select {
+			case <-done:
+				return
+			case v, ok := <-c:
+				if !ok { // 外界关闭数据流
+					return
+				}
+				select { // 防止写入阻塞
+				case valStream <- *v:
 				case <-done:
 				}
 			}
