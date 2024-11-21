@@ -15,6 +15,7 @@ CREATE TABLE public.camera (
 	created timestamp(0) NULL, -- 创建时间
 	save_video int2 NULL, -- 是否保留录像：1.保留；0.不保留；
 	live int2 NULL, -- 开启直播状态：1.开启；0.关闭；
+	rtmp_push_status int2 NULL, -- 开启rtmp推送状态：1.开启；0.关闭；
 	CONSTRAINT camera_pk PRIMARY KEY (id)
 );
 
@@ -30,6 +31,7 @@ COMMENT ON COLUMN public.camera.enabled IS '是否启用：1.启用；0.禁用�
 COMMENT ON COLUMN public.camera.created IS '创建时间';
 COMMENT ON COLUMN public.camera.save_video IS '是否保留录像：1.保留；0.不保留；';
 COMMENT ON COLUMN public.camera.live IS '开启直播状态：1.开启；0.关闭；';
+COMMENT ON COLUMN public.camera.rtmp_push_status IS '开启rtmp推送状态：1.开启；0.关闭；';
 
 -- public.camera_share definition
 
