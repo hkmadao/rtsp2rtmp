@@ -71,16 +71,6 @@ func (rfw *RtmpFlvWriter) createConn() error {
 		logs.Error("not found camera : %s", rfw.code)
 		return err
 	}
-	if camera.Enabled != 1 {
-		go func() {
-			select {
-			case <-rfw.GetDone():
-				return
-			case <-rfw.pktStream:
-				return
-			}
-		}()
-	}
 	rtmpConn, err := rtmp.Dial(camera.RtmpURL)
 	if err != nil {
 		logs.Error("rtmp client connection error : %v", err)
@@ -99,27 +89,57 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		}
 	}()
 
+	var camera models.Camera
+	camera.Code = rfw.code
+	camera, err := models.CameraSelectOne(camera)
+	if err != nil {
+		logs.Error("not found camera : %s", rfw.code)
+		return
+	}
+	if camera.OnlineStatus != 1 {
+		return
+	}
+	if camera.RtmpPushStatus != 1 {
+		go func() {
+			for {
+				select {
+				case <-rfw.GetDone():
+					return
+				case <-rfw.pktStream:
+				}
+			}
+		}()
+		return
+	}
+
 	ticker := time.NewTicker(rfw.pulseInterval)
 	defer func() {
 		if rfw.conn != nil {
+			logs.Info("disconnect old RtmpFlvWriter : %s", rfw.code)
 			rfw.conn.Close()
-			_, pktStreamOk := <-rfw.pktStream
-			if pktStreamOk {
-				rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
-				rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
-			}
+		}
+		_, pktStreamOk := <-rfw.pktStream
+		if pktStreamOk {
+			logs.Info("to create NewRtmpFlvWriter : %s", rfw.code)
+			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
+			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
+		} else {
+			logs.Info("RtmpFlvWriter pktStream is closed : %s", rfw.code)
 		}
 	}()
 	pktStream := utils.OrDonePacket(rfw.done, rfw.pktStream)
+	timeNow := time.Now().Local()
 	for {
 		select {
 		case <-ticker.C:
+			logs.Error("flvWrite ticker time out: %s", rfw.code)
 			return
 		case pkt, ok := <-pktStream:
 			if !ok {
 				return
 			}
-			if err := rfw.writerPacket(pkt); err != nil {
+			if err := rfw.writerPacket(pkt, &timeNow); err != nil {
+				logs.Error("flvWrite error : %v", err)
 				return
 			}
 			ticker.Reset(rfw.pulseInterval)
@@ -127,7 +147,7 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 	}
 }
 
-func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
+func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) error {
 	if rfw.start {
 		if err := rfw.conn.WritePacket(pkt); err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
@@ -146,14 +166,18 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
 			logs.Error("writer header to rtmp server error : %v", err)
 			return err
 		}
-		rfw.start = true
 		err = rfw.conn.WritePacket(pkt)
 		if err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
 			return err
 		}
+		logs.Info("writer KeyFrame to rtmp server success : %s", rfw.code)
+		rfw.start = true
 		return nil
 	}
-	// logs.Debug("ingrore package")
+	if time.Now().Local().After(templateTime.Add(1 * time.Minute)) {
+		*templateTime = time.Now().Local()
+		logs.Error("RtmpFlvWriter ingrore package: %s", rfw.code)
+	}
 	return nil
 }

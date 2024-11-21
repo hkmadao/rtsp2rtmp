@@ -90,8 +90,6 @@ func HttpFlvPlay(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, r)
 		return
 	}
-	for range flvPlayerDone {
-		logs.Info("flvPlayerDone closed")
-	}
+	<-flvPlayerDone
 	logs.Info("player [%s] addr [%s] exit", code, c.Request.RemoteAddr)
 }

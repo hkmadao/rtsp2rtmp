@@ -45,7 +45,7 @@
 server:
     user:
         name: admin #网页登录用户名
-        password: admin #网页登录密码
+        password: admin #网页登录密码，不要用纯数字，有bug
     httpflv:
         port: 8080
         static:

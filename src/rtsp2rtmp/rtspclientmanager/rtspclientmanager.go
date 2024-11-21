@@ -39,10 +39,6 @@ func (rc *RtspClientManager) ExistsPublisher(code string) bool {
 	exists := false
 	rc.rcs.Range(func(key, value interface{}) bool {
 		codeKey := key.(string)
-		if code == codeKey {
-			exists = true
-			return false
-		}
 		exists = codeKey == code
 		return true
 	})
@@ -57,14 +53,15 @@ func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan
 	}()
 
 	for code := range codeStream {
+		rs.rcs.Delete(code)
 		v, b := rs.conns.Load(code)
 		if b {
 			r := v.(*rtspv2.RTSPClient)
 			r.Close()
 			logs.Info("camera [%s] close success", code)
-			rs.rcs.Delete(code)
+			rs.conns.Delete(code)
 		} else {
-			logs.Error("codeStream error")
+			logs.Info("RtspClient not exist, needn't close: %s", code)
 		}
 	}
 }
@@ -150,10 +147,14 @@ func (s *RtspClientManager) connRtsp(code string) {
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
 	logs.Info("%s", string(session.SDPRaw))
+	ticker := time.NewTicker(1 * time.Second)
 	for pkt := range utils.OrDoneRefPacket(done, session.OutgoingPacketQueue) {
 		//不能开goroutine,不能保证包的顺序
 		select {
 		case pktStream <- pkt:
+			ticker.Reset(1 * time.Second)
+		case <-ticker.C:
+			logs.Error("rtspclient lose packet, time out")
 		default:
 			//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
 			logs.Debug("rtspclient lose packet")
@@ -172,6 +173,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		models.CameraUpdate(camera)
 	}
 
+	logs.Error("session Close error : %v", err)
 	session.Close()
 }
 

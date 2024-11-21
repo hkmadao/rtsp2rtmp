@@ -69,13 +69,16 @@ func tee(done <-chan int, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Pack
 				case <-done:
 					return
 				case out1 <- val:
+					// logs.Debug("FileFlvManager write success")
 					out1 = nil // 置空阻塞机制完成select轮询
 				case out2 <- val:
+					// logs.Debug("HttpflvAdmin write success")
 					out2 = nil
 				case out3 <- val:
+					// logs.Debug("RtmpFlvManager write success")
 					out3 = nil
 				default:
-					logs.Debug("RtspClient tee lose packet")
+					// logs.Debug("RtspClient tee lose packet")
 				}
 			}
 		}

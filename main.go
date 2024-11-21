@@ -10,8 +10,8 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/task"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 
-	// "net/http"
-	// _ "net/http/pprof"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/beego/beego/v2/core/logs"
 )
@@ -25,7 +25,7 @@ func main() {
 	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	logs.Info("Server Start Awaiting Signal")
-	// http.ListenAndServe("0.0.0.0:6060", nil)
+	http.ListenAndServe("0.0.0.0:6060", nil)
 	select {
 	case sig := <-sigs:
 		logs.Info(sig)

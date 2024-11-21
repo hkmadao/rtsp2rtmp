@@ -50,11 +50,15 @@ func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 	}
 	if camera.Live != 1 {
 		go func() {
-			select {
-			case <-hfm.GetDone():
-				return
-			case <-hfm.pktStream:
-				return
+			for {
+				select {
+				case <-hfm.GetDone():
+					return
+				case _, ok := <-hfm.pktStream:
+					if !ok {
+						return
+					}
+				}
 			}
 		}()
 		return hfm
@@ -89,7 +93,7 @@ func (hfm *HttpFlvManager) flvWrite() {
 				// logs.Debug("flvWrite pkt")
 			default:
 				//当播放者速率跟不上时，会发生丢包
-				logs.Debug("camera [%s] http flv sessionId [%s] write fail", hfm.code, wi.GetSessionId())
+				logs.Debug("camera [%s] http flv sessionId [%d] write fail", hfm.code, wi.GetSessionId())
 			}
 			return true
 		})
@@ -107,6 +111,10 @@ func (hfm *HttpFlvManager) AddHttpFlvPlayer(
 	pktStream := make(chan av.Packet, 1024)
 	hfw := httpflvwriter.NewHttpFlvWriter(hfm.GetDone(), playerDone, pulseInterval, pktStream, hfm.code, hfm.codecs, writer, sessionId, hfm)
 	hfm.hfws.Store(sessionId, hfw)
+	go func() {
+		<-hfw.GetDone()
+		hfm.hfws.Delete(sessionId)
+	}()
 	return hfw.GetDone(), nil
 }
 
