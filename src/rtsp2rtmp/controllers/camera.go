@@ -181,6 +181,9 @@ func CameraEnabled(c *gin.Context) {
 		return
 	}
 	camera.Enabled = q.Enabled
+	if q.Enabled != 1 {
+		camera.OnlineStatus = 0
+	}
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
@@ -190,11 +193,53 @@ func CameraEnabled(c *gin.Context) {
 		return
 	}
 	if q.Enabled != 1 {
-		//close camera conn
+		logs.Debug("close camera conn: %s", camera.Code)
 		select {
 		case codeStream <- camera.Code:
 		case <-time.After(1 * time.Second):
 		}
+	}
+
+	c.JSON(http.StatusOK, r)
+}
+
+func RtmpPushChange(c *gin.Context) {
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	r := result.Result{Code: 1, Msg: ""}
+	q := models.Camera{}
+	err := c.BindJSON(&q)
+	if err != nil {
+		logs.Error("param error : %v", err)
+		r.Code = 0
+		r.Msg = "param error"
+		c.JSON(http.StatusOK, r)
+		return
+	}
+
+	camera, err := models.CameraSelectById(q.Id)
+	if err != nil {
+		logs.Error("query camera error : %v", err)
+		r.Code = 0
+		r.Msg = "query camera error"
+		c.JSON(http.StatusOK, r)
+		return
+	}
+	camera.RtmpPushStatus = q.RtmpPushStatus
+	_, err = models.CameraUpdate(camera)
+	if err != nil {
+		logs.Error("RtmpPushEnabled camera status %d error : %v", camera.Enabled, err)
+		r.Code = 0
+		r.Msg = "RtmpPushEnabled camera status %d error"
+		c.JSON(http.StatusOK, r)
+		return
+	}
+	switch {
+	case q.RtmpPushStatus != 1:
+		logs.Info("camera [%s] stop push rtmp", q.Code)
+		flvmanage.GetSingleRtmpFlvManager().StopWrite(q.Code)
+	case q.RtmpPushStatus == 1:
+		flvmanage.GetSingleRtmpFlvManager().StartWrite(q.Code)
+		logs.Info("camera [%s] start push rtmp", q.Code)
 	}
 
 	c.JSON(http.StatusOK, r)
@@ -224,21 +269,19 @@ func CameraSaveVideoChange(c *gin.Context) {
 	camera.SaveVideo = q.SaveVideo
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
-		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
+		logs.Error("SaveVideo camera status %d error : %v", camera.SaveVideo, err)
 		r.Code = 0
-		r.Msg = "enabled camera status %d error"
+		r.Msg = "SaveVideo camera status %d error"
 		c.JSON(http.StatusOK, r)
 		return
 	}
 	switch {
-	case q.Enabled != 1:
-
+	case q.SaveVideo != 1:
+		logs.Info("camera [%s] stop save video", q.Code)
+		flvmanage.GetSingleFileFlvManager().StopWrite(q.Code)
 	case q.SaveVideo == 1:
 		flvmanage.GetSingleFileFlvManager().StartWrite(q.Code)
 		logs.Info("camera [%s] start save video", q.Code)
-	default:
-		logs.Info("camera [%s] stop save video", q.Code)
-		flvmanage.GetSingleFileFlvManager().StopWrite(q.Code)
 	}
 
 	c.JSON(http.StatusOK, r)
@@ -268,19 +311,17 @@ func CameraLiveChange(c *gin.Context) {
 	camera.Live = q.Live
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
-		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
+		logs.Error("Live camera status %d error : %v", camera.Live, err)
 		r.Code = 0
-		r.Msg = "enabled camera status %d error"
+		r.Msg = "Live camera status %d error"
 		c.JSON(http.StatusOK, r)
 		return
 	}
 	switch {
-	case q.Enabled != 1:
-
+	case q.Live != 1:
+		flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
 	case q.Live == 1:
 		flvmanage.GetSingleHttpflvAdmin().StartWrite(q.Code)
-	default:
-		flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
 	}
 
 	c.JSON(http.StatusOK, r)
@@ -311,19 +352,15 @@ func CameraPlayAuthCodeReset(c *gin.Context) {
 	camera.PlayAuthCode = playAuthCode
 	_, err = models.CameraUpdate(camera)
 	if err != nil {
-		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
+		logs.Error("PlayAuthCode camera status %d error : %v", camera.PlayAuthCode, err)
 		r.Code = 0
-		r.Msg = "enabled camera status %d error"
+		r.Msg = "PlayAuthCode camera status %d error"
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	switch {
-	case q.Enabled != 1:
 
-	case q.Live == 1:
-		flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
-		flvmanage.GetSingleHttpflvAdmin().StartWrite(q.Code)
-	}
+	flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
+	flvmanage.GetSingleHttpflvAdmin().StartWrite(q.Code)
 
 	c.JSON(http.StatusOK, r)
 }

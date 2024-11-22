@@ -16,15 +16,18 @@ type IRtmpFlvManager interface {
 }
 
 type RtmpFlvWriter struct {
-	selfDone        chan interface{}
-	pktStream       <-chan av.Packet
-	code            string
-	codecs          []av.CodecData
-	start           bool
-	conn            *rtmp.Conn
-	pulseInterval   time.Duration
-	heartbeatStream chan interface{}
-	irfm            IRtmpFlvManager
+	done          chan int
+	pktStream     <-chan av.Packet
+	code          string
+	codecs        []av.CodecData
+	start         bool
+	conn          *rtmp.Conn
+	pulseInterval time.Duration
+	irfm          IRtmpFlvManager
+}
+
+func (rfw *RtmpFlvWriter) GetDone() <-chan int {
+	return rfw.done
 }
 
 func (rfw *RtmpFlvWriter) GetPktStream() <-chan av.Packet {
@@ -37,17 +40,15 @@ func (rfw *RtmpFlvWriter) GetCodecs() []av.CodecData {
 
 func NewRtmpFlvWriter(pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
 	rfw := &RtmpFlvWriter{
-		selfDone:        make(chan interface{}, 10),
-		pktStream:       pktStream,
-		code:            code,
-		codecs:          codecs,
-		start:           false,
-		pulseInterval:   5 * time.Second,
-		heartbeatStream: make(chan interface{}),
-		irfm:            irfm,
+		done:          make(chan int),
+		pktStream:     pktStream,
+		code:          code,
+		codecs:        codecs,
+		start:         false,
+		pulseInterval: 5 * time.Second,
+		irfm:          irfm,
 	}
 	go rfw.flvWrite()
-	go rfw.monitor()
 	return rfw
 }
 
@@ -58,49 +59,8 @@ func (rfw *RtmpFlvWriter) StopWrite() {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
-		//有多个地方监听seleDone,需要写入多次才能退出多个goroutine
-		for i := 0; i < 10; i++ {
-			select {
-			case rfw.selfDone <- struct{}{}:
-			default:
-			}
-		}
+		close(rfw.done)
 	}()
-}
-
-func (rfw *RtmpFlvWriter) monitor() {
-	defer func() {
-		if r := recover(); r != nil {
-			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
-		}
-	}()
-
-	defer func() {
-		if r := recover(); r != nil {
-			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
-		}
-	}()
-	for {
-		select {
-		case <-rfw.selfDone:
-			return
-		case _, ok := <-rfw.heartbeatStream:
-			if ok {
-				logs.Debug("heartbeat")
-				continue
-			}
-			rfw.StopWrite()
-			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
-			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
-			return
-		case <-time.After(2 * rfw.pulseInterval):
-			//time out
-			rfw.StopWrite()
-			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
-			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
-			return
-		}
-	}
 }
 
 func (rfw *RtmpFlvWriter) createConn() error {
@@ -116,6 +76,7 @@ func (rfw *RtmpFlvWriter) createConn() error {
 		logs.Error("rtmp client connection error : %v", err)
 		return err
 	}
+	logs.Info("rtmp client connection success : %s", rfw.code)
 	rfw.conn = rtmpConn
 	return nil
 }
@@ -127,49 +88,58 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
-	pulse := time.NewTicker(rfw.pulseInterval).C
 
-	sendPulse := func() {
-		select {
-		case rfw.heartbeatStream <- struct{}{}:
-		default:
-		}
+	var camera models.Camera
+	camera.Code = rfw.code
+	camera, err := models.CameraSelectOne(camera)
+	if err != nil {
+		logs.Error("not found camera : %s", rfw.code)
+		return
 	}
-
-	sendPulse()
-	done := make(chan interface{}, 10)
-	go func(done <-chan interface{}) {
-		defer func() {
-			close(rfw.heartbeatStream)
-			if r := recover(); r != nil {
-				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+	if camera.OnlineStatus != 1 {
+		return
+	}
+	if camera.RtmpPushStatus != 1 {
+		go func() {
+			for {
+				select {
+				case <-rfw.GetDone():
+					return
+				case <-rfw.pktStream:
+				}
 			}
 		}()
-		for {
-			select {
-			case <-pulse:
-				sendPulse()
-			case <-done:
-				return
-			}
-		}
-	}(done)
+		return
+	}
 
 	ticker := time.NewTicker(rfw.pulseInterval)
 	defer func() {
 		if rfw.conn != nil {
+			logs.Info("disconnect old RtmpFlvWriter : %s", rfw.code)
 			rfw.conn.Close()
 		}
+		_, pktStreamOk := <-rfw.pktStream
+		if pktStreamOk {
+			logs.Info("to create NewRtmpFlvWriter : %s", rfw.code)
+			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
+			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
+		} else {
+			logs.Info("RtmpFlvWriter pktStream is closed : %s", rfw.code)
+		}
 	}()
-	pktStream := utils.OrDonePacket(rfw.selfDone, rfw.pktStream)
+	pktStream := utils.OrDonePacket(rfw.done, rfw.pktStream)
+	timeNow := time.Now().Local()
 	for {
 		select {
 		case <-ticker.C:
-			close(done)
+			logs.Error("flvWrite ticker time out: %s", rfw.code)
 			return
-		case pkt := <-pktStream:
-			if err := rfw.writerPacket(pkt); err != nil {
-				close(done)
+		case pkt, ok := <-pktStream:
+			if !ok {
+				return
+			}
+			if err := rfw.writerPacket(pkt, &timeNow); err != nil {
+				logs.Error("flvWrite error : %v", err)
 				return
 			}
 			ticker.Reset(rfw.pulseInterval)
@@ -177,7 +147,7 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 	}
 }
 
-func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
+func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) error {
 	if rfw.start {
 		if err := rfw.conn.WritePacket(pkt); err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
@@ -196,13 +166,18 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet) error {
 			logs.Error("writer header to rtmp server error : %v", err)
 			return err
 		}
-		rfw.start = true
 		err = rfw.conn.WritePacket(pkt)
 		if err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
 			return err
 		}
+		logs.Info("writer KeyFrame to rtmp server success : %s", rfw.code)
+		rfw.start = true
 		return nil
+	}
+	if time.Now().Local().After(templateTime.Add(1 * time.Minute)) {
+		*templateTime = time.Now().Local()
+		logs.Error("RtmpFlvWriter ingrore package: %s", rfw.code)
 	}
 	return nil
 }

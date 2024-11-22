@@ -22,7 +22,29 @@ func OrDone(done <-chan interface{}, c <-chan interface{}) <-chan interface{} {
 	return valStream
 }
 
-func Tee(done <-chan interface{}, in <-chan interface{}) (<-chan interface{}, <-chan interface{}) {
+func OrDoneInt(done <-chan int, c <-chan int) <-chan int {
+	valStream := make(chan int)
+	go func() {
+		defer close(valStream)
+		for {
+			select {
+			case <-done:
+				return
+			case v, ok := <-c:
+				if !ok { // 外界关闭数据流
+					return
+				}
+				select { // 防止写入阻塞
+				case valStream <- v:
+				case <-done:
+				}
+			}
+		}
+	}()
+	return valStream
+}
+
+func Tee(done <-chan int, in <-chan interface{}) (<-chan interface{}, <-chan interface{}) {
 	out1 := make(chan interface{})
 	out2 := make(chan interface{})
 	go func() {

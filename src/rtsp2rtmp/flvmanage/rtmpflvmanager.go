@@ -22,16 +22,8 @@ func GetSingleRtmpFlvManager() *rtmpFlvManager {
 }
 
 func (rfm *rtmpFlvManager) FlvWrite(pktStream <-chan av.Packet, code string, codecs []av.CodecData) {
-	ffw := rtmpflvwriter.NewRtmpFlvWriter(pktStream, code, codecs, rfm)
-	rfm.rfms.Store(code, ffw)
-}
-
-func (rfm *rtmpFlvManager) StopWrite(code string) {
-	v, ok := rfm.rfms.Load(code)
-	if ok {
-		ffw := v.(*rtmpflvwriter.RtmpFlvWriter)
-		ffw.StopWrite()
-	}
+	rfw := rtmpflvwriter.NewRtmpFlvWriter(pktStream, code, codecs, rfm)
+	rfm.rfms.Store(code, rfw)
 }
 
 func (rfm *rtmpFlvManager) StartWrite(code string) {
@@ -40,6 +32,14 @@ func (rfm *rtmpFlvManager) StartWrite(code string) {
 		ffw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		ffw.StopWrite()
 		rfm.FlvWrite(ffw.GetPktStream(), code, ffw.GetCodecs())
+	}
+}
+
+func (rfm *rtmpFlvManager) StopWrite(code string) {
+	v, ok := rfm.rfms.Load(code)
+	if ok {
+		ffw := v.(*rtmpflvwriter.RtmpFlvWriter)
+		ffw.StopWrite()
 	}
 }
 

@@ -15,7 +15,7 @@ type IRtspClientManager interface {
 type RtspClient struct {
 	code         string
 	codecs       []av.CodecData
-	connDone     <-chan interface{}
+	connDone     <-chan int
 	pktStream    <-chan av.Packet
 	ffmPktStream <-chan av.Packet
 	hfmPktStream <-chan av.Packet
@@ -23,7 +23,7 @@ type RtspClient struct {
 	ircm         IRtspClientManager
 }
 
-func NewRtspClient(connDone <-chan interface{}, pktStream <-chan av.Packet, code string, codecs []av.CodecData, ircm IRtspClientManager) *RtspClient {
+func NewRtspClient(connDone <-chan int, pktStream <-chan av.Packet, code string, codecs []av.CodecData, ircm IRtspClientManager) *RtspClient {
 	r := &RtspClient{
 		connDone:     connDone,
 		pktStream:    pktStream,
@@ -53,15 +53,7 @@ func (r *RtspClient) pktTransfer() {
 	flvmanage.GetSingleRtmpFlvManager().FlvWrite(r.rfmPktStream, r.code, r.codecs)
 }
 
-// func (r *Publisher) GetFfmPktStream() (<-chan av.Packet, string, []av.CodecData) {
-// 	return r.ffmPktStream, r.code, r.codecs
-// }
-
-// func (r *Publisher) GetHfmPktStream() (<-chan av.Packet, string, []av.CodecData) {
-// 	return r.ffmPktStream, r.code, r.codecs
-// }
-
-func tee(done <-chan interface{}, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Packet, <-chan av.Packet) {
+func tee(done <-chan int, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Packet, <-chan av.Packet) {
 	//设置缓冲，调节前后速率
 	out1 := make(chan av.Packet, 50)
 	out2 := make(chan av.Packet, 50)
@@ -77,13 +69,16 @@ func tee(done <-chan interface{}, in <-chan av.Packet) (<-chan av.Packet, <-chan
 				case <-done:
 					return
 				case out1 <- val:
+					// logs.Debug("FileFlvManager write success")
 					out1 = nil // 置空阻塞机制完成select轮询
 				case out2 <- val:
+					// logs.Debug("HttpflvAdmin write success")
 					out2 = nil
 				case out3 <- val:
+					// logs.Debug("RtmpFlvManager write success")
 					out3 = nil
 				default:
-					logs.Debug("RtspClient tee lose packet")
+					// logs.Debug("RtspClient tee lose packet")
 				}
 			}
 		}
