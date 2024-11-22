@@ -38,7 +38,10 @@ func (rc *RtspClientManager) ExistsPublisher(code string) bool {
 	exists := false
 	rc.rcs.Range(func(key, value interface{}) bool {
 		codeKey := key.(string)
-		exists = codeKey == code
+		if codeKey == code {
+			exists = true
+			return false
+		}
 		return true
 	})
 	return exists
