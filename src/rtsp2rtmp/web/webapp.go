@@ -68,6 +68,7 @@ func (w *web) webRun() {
 	router.POST("/camera/edit", controllers.CameraEdit)
 	router.POST("/camera/delete/:id", controllers.CameraDelete)
 	router.POST("/camera/enabled", controllers.CameraEnabled)
+	router.POST("/camera/rtmppushchange", controllers.RtmpPushChange)
 	router.POST("/camera/savevideochange", controllers.CameraSaveVideoChange)
 	router.POST("/camera/livechange", controllers.CameraLiveChange)
 	router.POST("/camera/playauthcodereset", controllers.CameraPlayAuthCodeReset)
@@ -182,10 +183,10 @@ func login(c *gin.Context) {
 		return
 	}
 	userNameParam := params["userName"].(string)
-	passwordParam := params["userName"].(string)
+	passwordParam := params["password"].(string)
 	userName := config.DefaultString("server.user.name", "")
 	password := config.DefaultString("server.user.password", "")
-	if userNameParam != userName && passwordParam != password {
+	if userNameParam == "" || passwordParam == "" || userNameParam != userName || passwordParam != password {
 		logs.Error("userName : %s , password : %s error", userNameParam, passwordParam)
 		r.Code = 0
 		r.Msg = "userName or password error ! "

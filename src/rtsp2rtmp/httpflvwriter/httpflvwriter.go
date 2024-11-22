@@ -86,11 +86,12 @@ func NewHttpFlvWriter(
 	}
 	if camera.Live != 1 {
 		go func() {
-			select {
-			case <-hfw.GetDone():
-				return
-			case <-hfw.pktStream:
-				return
+			for {
+				select {
+				case <-hfw.GetDone():
+					return
+				case <-hfw.pktStream:
+				}
 			}
 		}()
 		return hfw
@@ -110,20 +111,20 @@ func (hfw *HttpFlvWriter) httpWrite() {
 	ticker := time.NewTicker(hfw.pulseInterval)
 	defer func() {
 		close(hfw.done)
-		if r := recover(); r != nil {
-			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
-		}
 	}()
 	pktStream := utils.OrDonePacket(hfw.playerDone, hfw.pktStream)
+
+	notBlockStream := hfw.changeNotBlockStream(pktStream)
+	timeNow := time.Now().Local()
 	for {
 		select {
 		case <-ticker.C:
 			return
-		case pkt, ok := <-pktStream:
+		case pkt, ok := <-notBlockStream:
 			if !ok {
 				return
 			}
-			if err := hfw.writerPacket(pkt); err != nil {
+			if err := hfw.writerPacket(pkt, &timeNow); err != nil {
 				return
 			}
 			ticker.Reset(hfw.pulseInterval)
@@ -131,7 +132,29 @@ func (hfw *HttpFlvWriter) httpWrite() {
 	}
 
 }
-func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet) error {
+
+func (hfw *HttpFlvWriter) changeNotBlockStream(pktStream <-chan av.Packet) <-chan av.Packet {
+	notBlockStream := make(chan av.Packet, 1024)
+	go func() {
+		for {
+			select {
+			case pkt, ok := <-pktStream:
+				if !ok {
+					return
+				}
+				select {
+				case notBlockStream <- pkt:
+				default:
+					logs.Error("camera: %s, session: %d lose package", hfw.code, hfw.sessionId)
+				}
+			}
+
+		}
+	}()
+	return notBlockStream
+}
+
+func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) error {
 	if hfw.start {
 		if err := hfw.muxer.WritePacket(pkt); err != nil {
 			logs.Error("writer packet to httpflv error : %v", err)
@@ -155,15 +178,18 @@ func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet) error {
 		}
 		return nil
 	}
-	logs.Debug("ingrore package")
+	if time.Now().Local().After(templateTime.Add(1 * time.Minute)) {
+		*templateTime = time.Now().Local()
+		logs.Error("HttpFlvWriter ingrore package: %s", hfw.code)
+	}
 	return nil
 }
 
 //Write extends to io.Writer
 func (hfw *HttpFlvWriter) Write(p []byte) (n int, err error) {
-	start := time.Now()
+	// start := time.Now()
 	defer func() {
-		logs.Debug(time.Since(start))
+		// logs.Debug(time.Since(start))
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}

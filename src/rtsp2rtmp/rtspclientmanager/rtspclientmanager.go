@@ -31,25 +31,20 @@ func GetSingleRtspClientManager() *RtspClientManager {
 
 func (rs *RtspClientManager) StartClient() {
 	go rs.serveStreams()
-	done := make(chan interface{})
-	go rs.stopConn(done, controllers.CodeStream())
+	go rs.stopConn(controllers.CodeStream())
 }
 
 func (rc *RtspClientManager) ExistsPublisher(code string) bool {
 	exists := false
 	rc.rcs.Range(func(key, value interface{}) bool {
 		codeKey := key.(string)
-		if code == codeKey {
-			exists = true
-			return false
-		}
 		exists = codeKey == code
 		return true
 	})
 	return exists
 }
 
-func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan string) {
+func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
@@ -57,14 +52,15 @@ func (rs *RtspClientManager) stopConn(done <-chan interface{}, codeStream <-chan
 	}()
 
 	for code := range codeStream {
+		rs.rcs.Delete(code)
 		v, b := rs.conns.Load(code)
 		if b {
 			r := v.(*rtspv2.RTSPClient)
 			r.Close()
 			logs.Info("camera [%s] close success", code)
-			rs.rcs.Delete(code)
+			rs.conns.Delete(code)
 		} else {
-			logs.Error("codeStream error")
+			logs.Info("RtspClient not exist, needn't close: %s", code)
 		}
 	}
 }
@@ -121,7 +117,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		Debug:            false,
 		DialTimeout:      10 * time.Second,
 		ReadWriteTimeout: 10 * time.Second,
-		DisableAudio:     true,
+		DisableAudio:     false,
 	}
 	session, err := rtspv2.Dial(ro)
 	if err != nil {
@@ -150,19 +146,30 @@ func (s *RtspClientManager) connRtsp(code string) {
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
 	logs.Info("%s", string(session.SDPRaw))
-	for pkt := range utils.OrDoneRefPacket(done, session.OutgoingPacketQueue) {
-		//不能开goroutine,不能保证包的顺序
+	ticker := time.NewTicker(10 * time.Second)
+	rtspStream := utils.OrDoneRefPacket(done, session.OutgoingPacketQueue)
+Loop:
+	for {
 		select {
-		case pktStream <- pkt:
-		default:
-			//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-			logs.Debug("rtspclient lose packet")
+		case pkt, ok := <-rtspStream:
+			if !ok {
+				logs.Error("camera: %s rtsp packet stream is close", code)
+				break Loop
+			}
+			//不能开goroutine,不能保证包的顺序
+			select {
+			case pktStream <- pkt:
+			default:
+				//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
+				logs.Debug("rtspclient lose packet")
+			}
+			ticker.Reset(10 * time.Second)
+		case <-ticker.C:
+			logs.Error("camera: %s read packet from rtsp time out", code)
+			break Loop
 		}
 	}
 
-	if err != nil {
-		logs.Error("session Close error : %v", err)
-	}
 	//offline camera
 	camera, err := models.CameraSelectOne(q)
 	if err != nil {
@@ -172,6 +179,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		models.CameraUpdate(camera)
 	}
 
+	logs.Error("session Close error : %v", err)
 	session.Close()
 }
 
