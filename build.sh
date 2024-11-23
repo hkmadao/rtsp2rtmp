@@ -19,6 +19,8 @@ for platform in $platforms; do
     echo "${GOOS_VAR}"_"${GOARCH_VAR}"
     if [[ "${GOOS_VAR}" == "windows" ]]; then
         GOOS=${GOOS_VAR} GOARCH=${GOARCH_VAR} CGO_ENABLED=${CGO_ENABLED_VAR} CC=x86_64-w64-mingw32-gcc go build -o ./resources/output/sqlite3/rtsp2rtmp_"${ver}"_"${GOOS_VAR}"_"${GOARCH_VAR}"/rtsp2rtmp.exe main.go
+    elif [[ "${platform}" == "linux_arm" ]]; then
+        GOOS=${GOOS_VAR} GOARCH=${GOARCH_VAR} CGO_ENABLED=${CGO_ENABLED_VAR} CC=arm-linux-gnueabihf-gcc go build -o ./resources/output/sqlite3/rtsp2rtmp_"${ver}"_"${GOOS_VAR}"_"${GOARCH_VAR}"/rtsp2rtmp main.go
     else
         GOOS=${GOOS_VAR} GOARCH=${GOARCH_VAR} CGO_ENABLED=${CGO_ENABLED_VAR} go build -o ./resources/output/sqlite3/rtsp2rtmp_"${ver}"_"${GOOS_VAR}"_"${GOARCH_VAR}"/rtsp2rtmp main.go
     fi
