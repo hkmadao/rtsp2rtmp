@@ -96,11 +96,13 @@ func (s *RtspClientManager) serveStreams() {
 
 func (s *RtspClientManager) connRtsp(code string) {
 	defer func() {
-		s.rcs.Delete(code)
-		s.conns.Delete(code)
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
+	}()
+	defer func() {
+		s.rcs.Delete(code)
+		s.conns.Delete(code)
 	}()
 	//放置信息表示已经开始
 	s.rcs.Store(code, struct{}{})

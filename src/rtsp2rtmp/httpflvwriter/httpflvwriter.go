@@ -136,6 +136,7 @@ func (hfw *HttpFlvWriter) httpWrite() {
 func (hfw *HttpFlvWriter) changeNotBlockStream(pktStream <-chan av.Packet) <-chan av.Packet {
 	notBlockStream := make(chan av.Packet, 1024)
 	go func() {
+		defer close(notBlockStream)
 		for {
 			select {
 			case pkt, ok := <-pktStream:

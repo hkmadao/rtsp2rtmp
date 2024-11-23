@@ -162,10 +162,12 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 		}
 		var err error
 		err = rfw.conn.WriteHeader(rfw.codecs)
+		logs.Info("KeyFrame WriteHeader to rtmp server : %s, codesc: %v", rfw.code, rfw.codecs)
 		if err != nil {
 			logs.Error("writer header to rtmp server error : %v", err)
 			return err
 		}
+		logs.Info("KeyFrame WriteHeader to rtmp server success : %s", rfw.code)
 		err = rfw.conn.WritePacket(pkt)
 		if err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
