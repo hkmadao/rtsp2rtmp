@@ -15,6 +15,7 @@ CREATE TABLE camera (
 	created timestamp NULL, -- 创建时间
 	save_video INTEGER NULL, -- 是否保留录像：1.保留；0.不保留；
 	live INTEGER NULL, -- 开启直播状态：1.开启；0.关闭；
+	rtmp_push_status INTEGER NULL, -- 开启rtmp推送状态：1.开启；0.关闭；
 	CONSTRAINT camera_pk PRIMARY KEY (id)
 );
 
