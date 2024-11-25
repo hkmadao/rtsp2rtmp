@@ -13,11 +13,12 @@ import (
 )
 
 type FileFlvManager struct {
-	done      chan int
-	pktStream <-chan av.Packet
-	code      string
-	codecs    []av.CodecData
-	ffws      sync.Map
+	done        chan int
+	fgDoneClose bool
+	pktStream   <-chan av.Packet
+	code        string
+	codecs      []av.CodecData
+	ffws        sync.Map
 }
 
 func (ffm *FileFlvManager) GetCode() string {
@@ -47,10 +48,11 @@ func (ffm *FileFlvManager) GetCodecs() []av.CodecData {
 
 func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.CodecData) *FileFlvManager {
 	ffm := &FileFlvManager{
-		done:      make(chan int),
-		pktStream: pktStream,
-		code:      code,
-		codecs:    codecs,
+		done:        make(chan int),
+		fgDoneClose: false,
+		pktStream:   pktStream,
+		code:        code,
+		codecs:      codecs,
 	}
 	camera, err := models.CameraSelectOne(models.Camera{Code: code})
 	if err != nil {
@@ -79,7 +81,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		ticker := time.NewTicker(1 * time.Hour)
 		for {
 			select {
-			case <-ffm.done:
+			case <-ffm.GetDone():
 				return
 			case <-ticker.C:
 				ffm.ffws.Range(func(key, value interface{}) bool {
@@ -113,6 +115,7 @@ func (ffm *FileFlvManager) StopWrite() {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
+		ffm.fgDoneClose = true
 		close(ffm.done)
 	}()
 }
@@ -122,6 +125,11 @@ func (ffm *FileFlvManager) flvWrite() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+		}
+	}()
+	defer func() {
+		if !ffm.fgDoneClose {
+			close(ffm.done)
 		}
 	}()
 	for pkt := range utils.OrDonePacket(ffm.done, ffm.pktStream) {
@@ -137,6 +145,11 @@ func (ffm *FileFlvManager) flvWrite() {
 			return true
 		})
 	}
+	ffm.ffws.Range(func(key, value interface{}) bool {
+		ffw := value.(*fileflvwriter.FileFlvWriter)
+		ffw.StopWrite()
+		return true
+	})
 }
 
 func (ffm *FileFlvManager) DeleteFFW(sesessionId int64) {

@@ -30,7 +30,7 @@ func GetSingleRtspClientManager() *RtspClientManager {
 }
 
 func (rs *RtspClientManager) StartClient() {
-	go rs.startConntions()
+	go rs.startConnections()
 	go rs.stopConn(controllers.CodeStream())
 }
 
@@ -60,6 +60,7 @@ func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 		if b {
 			r := v.(*rtspv2.RTSPClient)
 			r.Close()
+			close(r.OutgoingPacketQueue)
 			logs.Info("camera [%s] close success", code)
 			rs.conns.Delete(code)
 		} else {
@@ -68,7 +69,7 @@ func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 	}
 }
 
-func (s *RtspClientManager) startConntions() {
+func (s *RtspClientManager) startConnections() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("rtspManager panic %v", r)

@@ -33,6 +33,7 @@ type FileFlvWriter struct {
 	fileName    string
 	muxer       *flv.Muxer
 	startTime   time.Time
+	endTime     time.Time
 	ffm         IFileFlvManager
 }
 
@@ -106,6 +107,19 @@ func NewFileFlvWriter(
 	return ffw
 }
 
+func (ffw *FileFlvWriter) StopWrite() {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+			}
+		}()
+		ffw.ffm.DeleteFFW(ffw.sessionId)
+		ffw.fgDoneClose = true
+		close(ffw.done)
+	}()
+}
+
 func (ffw *FileFlvWriter) TickerStopWrite() {
 	go func() {
 		defer func() {
@@ -113,11 +127,13 @@ func (ffw *FileFlvWriter) TickerStopWrite() {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
-		//等待30秒再关闭
-		<-time.NewTicker(30 * time.Second).C
-		ffw.ffm.DeleteFFW(ffw.sessionId)
-		ffw.fgDoneClose = true
-		close(ffw.done)
+		select {
+		case <-time.NewTicker(30 * time.Second).C: //等待30秒再关闭
+			ffw.ffm.DeleteFFW(ffw.sessionId)
+			ffw.fgDoneClose = true
+			close(ffw.done)
+		case <-ffw.GetDone():
+		}
 	}()
 }
 
@@ -158,6 +174,7 @@ func (ffw *FileFlvWriter) flvWrite() {
 		return
 	}
 	defer func() {
+		ffw.endTime = time.Now()
 		ffw.muxer.WriteTrailer()
 		ffw.fd.Close()
 
@@ -216,7 +233,7 @@ func (ffw *FileFlvWriter) writeScriptTagData() {
 	}
 	buf := make([]byte, 10*1024)
 	i := 1
-	duration := float64(time.Now().Sub(ffw.startTime).Seconds())
+	duration := float64(ffw.endTime.Sub(ffw.startTime).Seconds())
 	durationBytes := utils.Float64ToByteBigEndian(duration)
 	durationHexStr := hex.EncodeToString(durationBytes)
 	scriptTagHexStr := "120000250000000000000002000A6F6E4D65746144617461080000000100086475726174696F6E00" + durationHexStr + "00000030"
