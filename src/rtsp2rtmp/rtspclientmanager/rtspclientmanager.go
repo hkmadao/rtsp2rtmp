@@ -30,7 +30,7 @@ func GetSingleRtspClientManager() *RtspClientManager {
 }
 
 func (rs *RtspClientManager) StartClient() {
-	go rs.serveStreams()
+	go rs.startConntions()
 	go rs.stopConn(controllers.CodeStream())
 }
 
@@ -68,17 +68,27 @@ func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 	}
 }
 
-func (s *RtspClientManager) serveStreams() {
+func (s *RtspClientManager) startConntions() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("rtspManager panic %v", r)
 		}
 	}()
+	es, err := models.CameraSelectAll()
+	if err != nil {
+		logs.Error("camera list query error: %s", err)
+		return
+	}
+	timeTemp := time.Now()
 	for {
-		es, err := models.CameraSelectAll()
-		if err != nil {
-			logs.Error("camera list is empty")
-			return
+		timeNow := time.Now()
+		if timeNow.After(timeTemp.Add(30 * time.Second)) {
+			es, err = models.CameraSelectAll()
+			if err != nil {
+				logs.Error("camera list query error: %s", err)
+				return
+			}
+			timeTemp = timeNow
 		}
 		for _, camera := range es {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
@@ -89,7 +99,7 @@ func (s *RtspClientManager) serveStreams() {
 			}
 			go s.connRtsp(camera.Code)
 		}
-		<-time.After(30 * time.Second)
+		<-time.After(1 * time.Second)
 	}
 
 }
@@ -135,19 +145,53 @@ func (s *RtspClientManager) connRtsp(code string) {
 		return
 	}
 	codecs := session.CodecData
+	// logs.Warn("camera: %s codecs: %v", code, session.CodecData)
 
 	c.OnlineStatus = 1
 	models.CameraUpdate(c)
 
 	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-	pktStream := make(chan av.Packet, 50)
+	pktStream := make(chan av.Packet, 1024)
 	defer func() {
 		close(done)
 		close(pktStream)
 	}()
 
-	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs, s)
+	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs)
+	go func() {
+		ticker := time.NewTicker(4 * time.Hour)
+		for {
+			select {
+			case <-ticker.C:
+				//rtmp server bug, connect can't out 16777215(0xFFFFFF) Millisecond
+				logs.Warn("camera: %s connect keep 4 hour, disconnect ", code)
+				session.Close()
+				return
+			case <-done:
+				return
+			}
+		}
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+			}
+		}()
+		for {
+			select {
+			case _, ok := <-session.Signals:
+				if !ok {
+					return
+				}
+				logs.Warn("camera: %s update codecs: %v", code, session.CodecData)
+				rc.UpdateCodecs(session.CodecData)
+			case <-done:
+				return
+			}
+		}
+	}()
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
 	logs.Info("%s", string(session.SDPRaw))

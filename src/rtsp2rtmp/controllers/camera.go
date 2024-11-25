@@ -6,7 +6,7 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvmanage"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
@@ -236,9 +236,9 @@ func RtmpPushChange(c *gin.Context) {
 	switch {
 	case q.RtmpPushStatus != 1:
 		logs.Info("camera [%s] stop push rtmp", q.Code)
-		flvmanage.GetSingleRtmpFlvManager().StopWrite(q.Code)
+		flvadmin.GetSingleRtmpFlvAdmin().StopWrite(q.Code)
 	case q.RtmpPushStatus == 1:
-		flvmanage.GetSingleRtmpFlvManager().StartWrite(q.Code)
+		flvadmin.GetSingleRtmpFlvAdmin().StartWrite(q.Code)
 		logs.Info("camera [%s] start push rtmp", q.Code)
 	}
 
@@ -278,9 +278,9 @@ func CameraSaveVideoChange(c *gin.Context) {
 	switch {
 	case q.SaveVideo != 1:
 		logs.Info("camera [%s] stop save video", q.Code)
-		flvmanage.GetSingleFileFlvManager().StopWrite(q.Code)
+		flvadmin.GetSingleFileFlvAdmin().StopWrite(q.Code)
 	case q.SaveVideo == 1:
-		flvmanage.GetSingleFileFlvManager().StartWrite(q.Code)
+		flvadmin.GetSingleFileFlvAdmin().StartWrite(q.Code)
 		logs.Info("camera [%s] start save video", q.Code)
 	}
 
@@ -319,9 +319,9 @@ func CameraLiveChange(c *gin.Context) {
 	}
 	switch {
 	case q.Live != 1:
-		flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
+		flvadmin.GetSingleHttpFlvAdmin().StopWrite(q.Code)
 	case q.Live == 1:
-		flvmanage.GetSingleHttpflvAdmin().StartWrite(q.Code)
+		flvadmin.GetSingleHttpFlvAdmin().StartWrite(q.Code)
 	}
 
 	c.JSON(http.StatusOK, r)
@@ -359,8 +359,8 @@ func CameraPlayAuthCodeReset(c *gin.Context) {
 		return
 	}
 
-	flvmanage.GetSingleHttpflvAdmin().StopWrite(q.Code)
-	flvmanage.GetSingleHttpflvAdmin().StartWrite(q.Code)
+	flvadmin.GetSingleHttpFlvAdmin().StopWrite(q.Code)
+	flvadmin.GetSingleHttpFlvAdmin().StartWrite(q.Code)
 
 	c.JSON(http.StatusOK, r)
 }

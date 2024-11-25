@@ -34,6 +34,15 @@ func (rfw *RtmpFlvWriter) GetPktStream() <-chan av.Packet {
 	return rfw.pktStream
 }
 
+func (rfw *RtmpFlvWriter) GetCode() string {
+	return rfw.code
+}
+
+func (rfw *RtmpFlvWriter) SetCodecs(codecs []av.CodecData) {
+	logs.Warn("RtmpFlvWriter: %s update codecs", rfw.code)
+	rfw.codecs = codecs
+}
+
 func (rfw *RtmpFlvWriter) GetCodecs() []av.CodecData {
 	return rfw.codecs
 }
