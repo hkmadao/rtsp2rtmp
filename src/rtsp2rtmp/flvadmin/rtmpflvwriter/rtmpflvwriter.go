@@ -21,6 +21,7 @@ type RtmpFlvWriter struct {
 	code          string
 	codecs        []av.CodecData
 	start         bool
+	startTime     time.Time
 	conn          *rtmp.Conn
 	pulseInterval time.Duration
 	irfm          IRtmpFlvManager
@@ -147,6 +148,10 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 			if !ok {
 				return
 			}
+			// if rfw.start {
+			// 	pktTime := time.Now().Sub(rfw.startTime)
+			// 	pkt.Time = pktTime
+			// }
 			if err := rfw.writerPacket(pkt, &timeNow); err != nil {
 				logs.Error("flvWrite error : %v", err)
 				return
@@ -171,6 +176,7 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 		}
 		var err error
 		err = rfw.conn.WriteHeader(rfw.codecs)
+		rfw.startTime = time.Now()
 		logs.Info("KeyFrame WriteHeader to rtmp server : %s, codesc: %v", rfw.code, rfw.codecs)
 		if err != nil {
 			logs.Error("writer header to rtmp server error : %v", err)

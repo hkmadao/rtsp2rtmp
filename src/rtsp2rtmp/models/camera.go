@@ -98,6 +98,6 @@ func CameraSelectAll() (es []Camera, err error) {
 		logs.Error("查询出错：%v", err)
 		return es, err
 	}
-	logs.Info("查询到%d条记录", num)
+	logs.Debug("查询到%d条记录", num)
 	return es, nil
 }

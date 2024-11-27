@@ -128,18 +128,17 @@ func (s *RtspClientManager) connRtsp(code string) {
 		return
 	}
 	logs.Info(c.Code, "connect", c.RtspURL)
-	ro := rtspv2.RTSPClientOptions{
+	rtspClientOptions := rtspv2.RTSPClientOptions{
 		URL:              c.RtspURL,
 		Debug:            false,
 		DialTimeout:      10 * time.Second,
 		ReadWriteTimeout: 10 * time.Second,
 		DisableAudio:     false,
 	}
-	session, err := rtspv2.Dial(ro)
+	session, err := rtspv2.Dial(rtspClientOptions)
 	if err != nil {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
 		c.OnlineStatus = 0
-		time.Sleep(5 * time.Second)
 		if c.OnlineStatus == 1 {
 			models.CameraUpdate(c)
 		}
@@ -160,20 +159,6 @@ func (s *RtspClientManager) connRtsp(code string) {
 	}()
 
 	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs)
-	go func() {
-		ticker := time.NewTicker(4 * time.Hour)
-		for {
-			select {
-			case <-ticker.C:
-				//rtmp server bug, connect can't out 16777215(0xFFFFFF) Millisecond
-				logs.Warn("camera: %s connect keep 4 hour, disconnect ", code)
-				session.Close()
-				return
-			case <-done:
-				return
-			}
-		}
-	}()
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -229,7 +214,7 @@ Loop:
 		models.CameraUpdate(camera)
 	}
 
-	logs.Error("session Close error : %v", err)
+	logs.Error("camera: %s session Close", code)
 	session.Close()
 }
 
