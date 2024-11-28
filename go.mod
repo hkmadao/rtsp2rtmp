@@ -12,4 +12,4 @@ require (
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 )
 
-replace github.com/deepch/vdk => github.com/hkmadao/vdk v0.0.0-20241120073805-439b6309323c
+replace github.com/deepch/vdk => github.com/hkmadao/vdk v0.0.0-20241127071358-df60b9bc5ae8

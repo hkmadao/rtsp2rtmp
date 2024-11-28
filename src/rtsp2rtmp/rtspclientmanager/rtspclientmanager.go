@@ -30,7 +30,7 @@ func GetSingleRtspClientManager() *RtspClientManager {
 }
 
 func (rs *RtspClientManager) StartClient() {
-	go rs.serveStreams()
+	go rs.startConnections()
 	go rs.stopConn(controllers.CodeStream())
 }
 
@@ -60,6 +60,7 @@ func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 		if b {
 			r := v.(*rtspv2.RTSPClient)
 			r.Close()
+			close(r.OutgoingPacketQueue)
 			logs.Info("camera [%s] close success", code)
 			rs.conns.Delete(code)
 		} else {
@@ -68,17 +69,27 @@ func (rs *RtspClientManager) stopConn(codeStream <-chan string) {
 	}
 }
 
-func (s *RtspClientManager) serveStreams() {
+func (s *RtspClientManager) startConnections() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("rtspManager panic %v", r)
 		}
 	}()
+	es, err := models.CameraSelectAll()
+	if err != nil {
+		logs.Error("camera list query error: %s", err)
+		return
+	}
+	timeTemp := time.Now()
 	for {
-		es, err := models.CameraSelectAll()
-		if err != nil {
-			logs.Error("camera list is empty")
-			return
+		timeNow := time.Now()
+		if timeNow.After(timeTemp.Add(30 * time.Second)) {
+			es, err = models.CameraSelectAll()
+			if err != nil {
+				logs.Error("camera list query error: %s", err)
+				return
+			}
+			timeTemp = timeNow
 		}
 		for _, camera := range es {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
@@ -89,7 +100,7 @@ func (s *RtspClientManager) serveStreams() {
 			}
 			go s.connRtsp(camera.Code)
 		}
-		<-time.After(30 * time.Second)
+		<-time.After(1 * time.Second)
 	}
 
 }
@@ -117,37 +128,56 @@ func (s *RtspClientManager) connRtsp(code string) {
 		return
 	}
 	logs.Info(c.Code, "connect", c.RtspURL)
-	ro := rtspv2.RTSPClientOptions{
+	rtspClientOptions := rtspv2.RTSPClientOptions{
 		URL:              c.RtspURL,
 		Debug:            false,
 		DialTimeout:      10 * time.Second,
 		ReadWriteTimeout: 10 * time.Second,
 		DisableAudio:     false,
 	}
-	session, err := rtspv2.Dial(ro)
+	session, err := rtspv2.Dial(rtspClientOptions)
 	if err != nil {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
 		c.OnlineStatus = 0
-		time.Sleep(5 * time.Second)
 		if c.OnlineStatus == 1 {
 			models.CameraUpdate(c)
 		}
 		return
 	}
 	codecs := session.CodecData
+	// logs.Warn("camera: %s codecs: %v", code, session.CodecData)
 
 	c.OnlineStatus = 1
 	models.CameraUpdate(c)
 
 	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
-	pktStream := make(chan av.Packet, 50)
+	pktStream := make(chan av.Packet, 1024)
 	defer func() {
 		close(done)
 		close(pktStream)
 	}()
 
-	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs, s)
+	rc := rtspclient.NewRtspClient(done, pktStream, code, codecs)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+			}
+		}()
+		for {
+			select {
+			case _, ok := <-session.Signals:
+				if !ok {
+					return
+				}
+				logs.Warn("camera: %s update codecs: %v", code, session.CodecData)
+				rc.UpdateCodecs(session.CodecData)
+			case <-done:
+				return
+			}
+		}
+	}()
 	s.rcs.Store(code, rc)
 	s.conns.Store(code, session)
 	logs.Info("%s", string(session.SDPRaw))
@@ -184,7 +214,7 @@ Loop:
 		models.CameraUpdate(camera)
 	}
 
-	logs.Error("session Close error : %v", err)
+	logs.Error("camera: %s session Close", code)
 	session.Close()
 }
 

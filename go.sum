@@ -147,8 +147,8 @@ github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgf
 github.com/grpc-ecosystem/grpc-gateway v1.5.0/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
 github.com/hashicorp/golang-lru v0.5.4 h1:YDjusn29QI/Das2iO9M0BHnIbxPeyuCHsjMW+lJfyTc=
 github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
-github.com/hkmadao/vdk v0.0.0-20241120073805-439b6309323c h1:5yfTO5fnPlulgYt+acbwMWfd3vDpZpO9j+zG59CceQ8=
-github.com/hkmadao/vdk v0.0.0-20241120073805-439b6309323c/go.mod h1:JlgGyR2ld6+xOIHa7XAxJh+stSDBAkdNvIPkUIdIywk=
+github.com/hkmadao/vdk v0.0.0-20241127071358-df60b9bc5ae8 h1:uc354yQx2guZSJHPZtQh32Q5NQHAWsqPlm00R3dSYac=
+github.com/hkmadao/vdk v0.0.0-20241127071358-df60b9bc5ae8/go.mod h1:JlgGyR2ld6+xOIHa7XAxJh+stSDBAkdNvIPkUIdIywk=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20220517205856-0058ec4f073c/go.mod h1:aYm2/VgdVmcIU8iMfdMvDMsRAQjcfZSKFby6HOFvi/w=

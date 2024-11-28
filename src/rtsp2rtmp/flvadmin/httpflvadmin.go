@@ -1,4 +1,4 @@
-package flvmanage
+package flvadmin
 
 import (
 	"errors"
@@ -7,24 +7,24 @@ import (
 	"time"
 
 	"github.com/deepch/vdk/av"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/httpflvmanage"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/httpflvmanage"
 )
 
-var hfas *HttpflvAdmin
+var hfas *HttpFlvAdmin
 
-type HttpflvAdmin struct {
+type HttpFlvAdmin struct {
 	hfms sync.Map
 }
 
 func init() {
-	hfas = &HttpflvAdmin{}
+	hfas = &HttpFlvAdmin{}
 }
 
-func GetSingleHttpflvAdmin() *HttpflvAdmin {
+func GetSingleHttpFlvAdmin() *HttpFlvAdmin {
 	return hfas
 }
 
-func (hfa *HttpflvAdmin) AddHttpFlvManager(
+func (hfa *HttpFlvAdmin) AddHttpFlvManager(
 	pktStream <-chan av.Packet,
 	code string,
 	codecs []av.CodecData,
@@ -33,7 +33,7 @@ func (hfa *HttpflvAdmin) AddHttpFlvManager(
 	hfa.hfms.Store(code, hfm)
 }
 
-func (hfa *HttpflvAdmin) StopWrite(code string) {
+func (hfa *HttpFlvAdmin) StopWrite(code string) {
 	v, ok := hfa.hfms.Load(code)
 	if ok {
 		ffw := v.(*httpflvmanage.HttpFlvManager)
@@ -41,7 +41,7 @@ func (hfa *HttpflvAdmin) StopWrite(code string) {
 	}
 }
 
-func (hfa *HttpflvAdmin) StartWrite(code string) {
+func (hfa *HttpFlvAdmin) StartWrite(code string) {
 	v, ok := hfa.hfms.Load(code)
 	if ok {
 		ffw := v.(*httpflvmanage.HttpFlvManager)
@@ -51,7 +51,7 @@ func (hfa *HttpflvAdmin) StartWrite(code string) {
 }
 
 //添加播放者
-func (hfa *HttpflvAdmin) AddHttpFlvPlayer(
+func (hfa *HttpFlvAdmin) AddHttpFlvPlayer(
 	playerDone <-chan int,
 	pulseInterval time.Duration,
 	code string,
@@ -63,4 +63,13 @@ func (hfa *HttpflvAdmin) AddHttpFlvPlayer(
 		return hfm.AddHttpFlvPlayer(playerDone, pulseInterval, writer)
 	}
 	return nil, errors.New("camera no connection")
+}
+
+//更新sps、pps等信息
+func (hfa *HttpFlvAdmin) UpdateCodecs(code string, codecs []av.CodecData) {
+	rfw, ok := hfa.hfms.Load(code)
+	if ok {
+		rfw := rfw.(*httpflvmanage.HttpFlvManager)
+		rfw.SetCodecs(codecs)
+	}
 }
