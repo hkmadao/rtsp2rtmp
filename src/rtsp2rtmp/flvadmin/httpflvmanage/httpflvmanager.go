@@ -8,7 +8,7 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/httpflvwriter"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/httpflvmanage/httpflvwriter"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 )
@@ -21,16 +21,30 @@ type HttpFlvManager struct {
 	hfws      sync.Map
 }
 
-func (ffw *HttpFlvManager) GetDone() <-chan int {
-	return ffw.done
+func (hfm *HttpFlvManager) GetCode() string {
+	return hfm.code
 }
 
-func (ffw *HttpFlvManager) GetPktStream() <-chan av.Packet {
-	return ffw.pktStream
+func (hfm *HttpFlvManager) SetCodecs(codecs []av.CodecData) {
+	logs.Warn("HttpFlvManager: %s update codecs", hfm.code)
+	hfm.codecs = codecs
+	hfm.hfws.Range(func(key, value interface{}) bool {
+		wi := value.(*httpflvwriter.HttpFlvWriter)
+		wi.SetCodecs(hfm.codecs)
+		return true
+	})
 }
 
-func (ffw *HttpFlvManager) GetCodecs() []av.CodecData {
-	return ffw.codecs
+func (hfm *HttpFlvManager) GetDone() <-chan int {
+	return hfm.done
+}
+
+func (hfm *HttpFlvManager) GetPktStream() <-chan av.Packet {
+	return hfm.pktStream
+}
+
+func (hfm *HttpFlvManager) GetCodecs() []av.CodecData {
+	return hfm.codecs
 }
 
 func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.CodecData) *HttpFlvManager {

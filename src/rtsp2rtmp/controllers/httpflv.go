@@ -8,7 +8,7 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvmanage"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
 )
@@ -82,7 +82,7 @@ func HttpFlvPlay(c *gin.Context) {
 	playerDone := make(chan int)
 	defer close(playerDone)
 	const timeout = 10 * time.Second
-	flvPlayerDone, err := flvmanage.GetSingleHttpflvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, c.Writer)
+	flvPlayerDone, err := flvadmin.GetSingleHttpFlvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, c.Writer)
 	if err != nil {
 		logs.Error("camera [%s] add player error : %s", code, err)
 		r.Code = 0

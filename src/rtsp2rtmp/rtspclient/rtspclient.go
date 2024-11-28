@@ -3,54 +3,65 @@ package rtspclient
 import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvmanage"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 )
-
-type IRtspClientManager interface {
-	Load(key interface{}) (interface{}, bool)
-	Store(key, value interface{})
-	Delete(key interface{})
-}
 
 type RtspClient struct {
 	code         string
 	codecs       []av.CodecData
 	connDone     <-chan int
+	done         chan int
 	pktStream    <-chan av.Packet
 	ffmPktStream <-chan av.Packet
 	hfmPktStream <-chan av.Packet
 	rfmPktStream <-chan av.Packet
-	ircm         IRtspClientManager
 }
 
-func NewRtspClient(connDone <-chan int, pktStream <-chan av.Packet, code string, codecs []av.CodecData, ircm IRtspClientManager) *RtspClient {
-	r := &RtspClient{
+func NewRtspClient(connDone <-chan int, pktStream <-chan av.Packet, code string, codecs []av.CodecData) *RtspClient {
+	done := make(chan int)
+	rc := &RtspClient{
 		connDone:     connDone,
+		done:         done,
 		pktStream:    pktStream,
 		code:         code,
 		codecs:       codecs,
 		ffmPktStream: make(chan av.Packet, 1024),
 		hfmPktStream: make(chan av.Packet, 1024),
 		rfmPktStream: make(chan av.Packet, 1024),
-		ircm:         ircm,
 	}
-	r.pktTransfer()
-	return r
+	rc.pktTransfer()
+	return rc
 }
 
-func (r *RtspClient) Done() {
-	<-r.connDone
+func (rtspClient *RtspClient) Done() {
+	<-rtspClient.connDone
 }
 
-func (r *RtspClient) pktTransfer() {
-	ffmPktStream, hfmPktStream, rfmPktStream := tee(r.connDone, r.pktStream)
-	r.ffmPktStream = ffmPktStream
-	r.hfmPktStream = hfmPktStream
-	r.rfmPktStream = rfmPktStream
-	logs.Debug("publisher [%s] create customer", r.code)
-	flvmanage.GetSingleFileFlvManager().FlvWrite(r.ffmPktStream, r.code, r.codecs)
-	flvmanage.GetSingleHttpflvAdmin().AddHttpFlvManager(r.hfmPktStream, r.code, r.codecs)
-	flvmanage.GetSingleRtmpFlvManager().FlvWrite(r.rfmPktStream, r.code, r.codecs)
+//主动关闭
+func (rtspClient *RtspClient) Close() {
+	close(rtspClient.done)
+}
+
+//更新sps、pps等信息
+func (rtspClient *RtspClient) UpdateCodecs(codecs []av.CodecData) {
+	rtspClient.codecs = codecs
+	logs.Warn("RtspClient: %s update codecs", rtspClient.code)
+	flvadmin.GetSingleFileFlvAdmin().UpdateCodecs(rtspClient.code, codecs)
+	flvadmin.GetSingleHttpFlvAdmin().UpdateCodecs(rtspClient.code, codecs)
+	flvadmin.GetSingleRtmpFlvAdmin().UpdateCodecs(rtspClient.code, codecs)
+}
+
+func (rtspClient *RtspClient) pktTransfer() {
+	done := utils.OrDoneInt(rtspClient.done, rtspClient.connDone)
+	ffmPktStream, hfmPktStream, rfmPktStream := tee(done, rtspClient.pktStream)
+	rtspClient.ffmPktStream = ffmPktStream
+	rtspClient.hfmPktStream = hfmPktStream
+	rtspClient.rfmPktStream = rfmPktStream
+	logs.Info("publisher [%s] create customer", rtspClient.code)
+	flvadmin.GetSingleFileFlvAdmin().FlvWrite(rtspClient.ffmPktStream, rtspClient.code, rtspClient.codecs)
+	flvadmin.GetSingleHttpFlvAdmin().AddHttpFlvManager(rtspClient.hfmPktStream, rtspClient.code, rtspClient.codecs)
+	flvadmin.GetSingleRtmpFlvAdmin().FlvWrite(rtspClient.rfmPktStream, rtspClient.code, rtspClient.codecs)
 }
 
 func tee(done <-chan int, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Packet, <-chan av.Packet) {
