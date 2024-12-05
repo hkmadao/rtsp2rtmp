@@ -1,24 +1,12 @@
-package models
+package service
 
 import (
-	"time"
-
 	"github.com/beego/beego/v2/client/orm"
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 )
 
-type CameraShare struct {
-	Id        string    `orm:"pk;column(id)" json:"id"`
-	CameraId  string    `orm:"column(camera_id)" json:"cameraId"`
-	Name      string    `orm:"column(name)" json:"name"`
-	AuthCode  string    `orm:"column(auth_code)" json:"authCode"`
-	Enabled   int       `orm:"column(enabled)" json:"enabled"`
-	Created   time.Time `orm:"column(created)" json:"created"`
-	StartTime time.Time `orm:"column(start_time)" json:"startTime"`
-	Deadline  time.Time `orm:"column(deadline)" json:"deadline"`
-}
-
-func CameraShareInsert(e CameraShare) (i int64, err error) {
+func CameraShareInsert(e entity.CameraShare) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Insert(&e)
 	if err != nil && err != orm.ErrLastInsertIdUnavailable {
@@ -28,7 +16,7 @@ func CameraShareInsert(e CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareDelete(e CameraShare) (i int64, err error) {
+func CameraShareDelete(e entity.CameraShare) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Delete(&e)
 	if err != nil {
@@ -38,7 +26,7 @@ func CameraShareDelete(e CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareUpdate(e CameraShare) (i int64, err error) {
+func CameraShareUpdate(e entity.CameraShare) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Update(&e)
 	if err != nil {
@@ -48,9 +36,9 @@ func CameraShareUpdate(e CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareSelectById(id string) (e CameraShare, err error) {
+func CameraShareSelectById(id string) (e entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	e = CameraShare{Id: id}
+	e = entity.CameraShare{Id: id}
 
 	err = o.Read(&e)
 
@@ -68,9 +56,9 @@ func CameraShareSelectById(id string) (e CameraShare, err error) {
 	}
 }
 
-func CameraShareSelectOne(q CameraShare) (e CameraShare, err error) {
+func CameraShareSelectOne(q entity.CameraShare) (e entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	err = o.QueryTable(new(CameraShare)).Filter("CameraId", q.CameraId).Filter("AuthCode", q.AuthCode).One(&e)
+	err = o.QueryTable(new(entity.CameraShare)).Filter("CameraId", q.CameraId).Filter("AuthCode", q.AuthCode).One(&e)
 	if err != nil {
 		logs.Error("查询出错：%v", err)
 		return e, err
@@ -80,7 +68,7 @@ func CameraShareSelectOne(q CameraShare) (e CameraShare, err error) {
 
 func CameraShareCountByCode(code string) (count int64, err error) {
 	o := orm.NewOrm()
-	count, err = o.QueryTable(new(CameraShare)).Filter("code", code).Count()
+	count, err = o.QueryTable(new(entity.CameraShare)).Filter("code", code).Count()
 	if err != nil {
 		logs.Error("查询出错：%v", err)
 		return count, err
@@ -88,9 +76,9 @@ func CameraShareCountByCode(code string) (count int64, err error) {
 	return count, nil
 }
 
-func CameraShareSelectAll() (es []CameraShare, err error) {
+func CameraShareSelectAll() (es []entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	num, err := o.QueryTable(new(CameraShare)).All(&es)
+	num, err := o.QueryTable(new(entity.CameraShare)).All(&es)
 	if err != nil {
 		logs.Error("查询出错：%v", err)
 		return es, err
@@ -99,9 +87,9 @@ func CameraShareSelectAll() (es []CameraShare, err error) {
 	return es, nil
 }
 
-func CameraShareSelectByCameraId(cameraId string) (es []CameraShare, err error) {
+func CameraShareSelectByCameraId(cameraId string) (es []entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	num, err := o.QueryTable(new(CameraShare)).Filter("CameraId", cameraId).All(&es)
+	num, err := o.QueryTable(new(entity.CameraShare)).Filter("CameraId", cameraId).All(&es)
 	if err != nil {
 		logs.Error("查询出错：%v", err)
 		return es, err

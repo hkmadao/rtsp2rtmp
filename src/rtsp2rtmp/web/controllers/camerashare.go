@@ -6,9 +6,10 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 func CameraShareList(c *gin.Context) {
@@ -22,7 +23,7 @@ func CameraShareList(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	cameraShares, err := models.CameraShareSelectByCameraId(cameraId)
+	cameraShares, err := service.CameraShareSelectByCameraId(cameraId)
 	if err != nil {
 		logs.Error("no camerashare found : %v", err)
 		r.Code = 0
@@ -41,7 +42,7 @@ func CameraShareEdit(c *gin.Context) {
 		Code: 1,
 		Msg:  "",
 	}
-	q := models.CameraShare{}
+	q := entity.CameraShare{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -51,7 +52,7 @@ func CameraShareEdit(c *gin.Context) {
 		return
 	}
 
-	_, err = models.CameraSelectById(q.CameraId)
+	_, err = service.CameraSelectById(q.CameraId)
 	if err != nil {
 		logs.Error("not fount camera : %v", err)
 		r.Code = 0
@@ -66,7 +67,7 @@ func CameraShareEdit(c *gin.Context) {
 		q.Created = time.Now()
 		playAuthCode, _ := utils.UUID()
 		q.AuthCode = playAuthCode
-		_, err = models.CameraShareInsert(q)
+		_, err = service.CameraShareInsert(q)
 		if err != nil {
 			logs.Error("camerashare insert error : %v", err)
 			r.Code = 0
@@ -77,12 +78,12 @@ func CameraShareEdit(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	cameraShare, _ := models.CameraShareSelectById(q.Id)
+	cameraShare, _ := service.CameraShareSelectById(q.Id)
 	cameraShare.Name = q.Name
 	cameraShare.StartTime = q.StartTime
 	cameraShare.Deadline = q.Deadline
 	// camera.Enabled = q.Enabled
-	_, err = models.CameraShareUpdate(cameraShare)
+	_, err = service.CameraShareUpdate(cameraShare)
 	if err != nil {
 		logs.Error("camerashare insert error : %v", err)
 		r.Code = 0
@@ -103,8 +104,8 @@ func CameraShareDelete(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	camera := models.CameraShare{Id: id}
-	_, err := models.CameraShareDelete(camera)
+	camera := entity.CameraShare{Id: id}
+	_, err := service.CameraShareDelete(camera)
 
 	if err != nil {
 		logs.Error("delete camerashare error : %v", err)
@@ -120,7 +121,7 @@ func CameraShareDelete(c *gin.Context) {
 func CameraShareEnabled(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.CameraShare{}
+	q := entity.CameraShare{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -130,7 +131,7 @@ func CameraShareEnabled(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraShareSelectById(q.Id)
+	camera, err := service.CameraShareSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camerashare error : %v", err)
 		r.Code = 0
@@ -139,7 +140,7 @@ func CameraShareEnabled(c *gin.Context) {
 		return
 	}
 	camera.Enabled = q.Enabled
-	_, err = models.CameraShareUpdate(camera)
+	_, err = service.CameraShareUpdate(camera)
 	if err != nil {
 		logs.Error("enabled camerashare status %d error : %v", camera.Enabled, err)
 		r.Code = 0

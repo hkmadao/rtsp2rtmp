@@ -7,15 +7,16 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 func CameraList(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	cameras, err := models.CameraSelectAll()
+	cameras, err := service.CameraSelectAll()
 	if err != nil {
 		logs.Error("no camera found : %v", err)
 		r.Code = 0
@@ -39,7 +40,7 @@ func CameraDetail(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	camera, err := models.CameraSelectById(cameraId)
+	camera, err := service.CameraSelectById(cameraId)
 	if err != nil {
 		logs.Error("no camera found : %v", err)
 		r.Code = 0
@@ -57,7 +58,7 @@ func CameraEdit(c *gin.Context) {
 		Code: 1,
 		Msg:  "",
 	}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -69,7 +70,7 @@ func CameraEdit(c *gin.Context) {
 
 	if q.Id == "" || len(q.Id) == 0 {
 		id, _ := utils.UUID()
-		count, err := models.CameraCountByCode(q.Code)
+		count, err := service.CameraCountByCode(q.Code)
 		if err != nil {
 			logs.Error("check camera is exist error : %v", err)
 			r.Code = 0
@@ -88,7 +89,7 @@ func CameraEdit(c *gin.Context) {
 		q.Created = time.Now()
 		playAuthCode, _ := utils.UUID()
 		q.PlayAuthCode = playAuthCode
-		_, err = models.CameraInsert(q)
+		_, err = service.CameraInsert(q)
 		if err != nil {
 			logs.Error("camera insert error : %v", err)
 			r.Code = 0
@@ -99,7 +100,7 @@ func CameraEdit(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	count, err := models.CameraCountByCode(q.Code)
+	count, err := service.CameraCountByCode(q.Code)
 	if err != nil {
 		logs.Error("check camera is exist error : %v", err)
 		r.Code = 0
@@ -114,12 +115,12 @@ func CameraEdit(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	camera, _ := models.CameraSelectById(q.Id)
+	camera, _ := service.CameraSelectById(q.Id)
 	camera.Code = q.Code
 	camera.RtspURL = q.RtspURL
 	camera.RtmpURL = q.RtmpURL
 	// camera.Enabled = q.Enabled
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("camera insert error : %v", err)
 		r.Code = 0
@@ -140,8 +141,8 @@ func CameraDelete(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	camera := models.Camera{Id: id}
-	_, err := models.CameraDelete(camera)
+	camera := entity.Camera{Id: id}
+	_, err := service.CameraDelete(camera)
 
 	if err != nil {
 		logs.Error("delete camera error : %v", err)
@@ -162,7 +163,7 @@ func CameraDelete(c *gin.Context) {
 func CameraEnabled(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -172,7 +173,7 @@ func CameraEnabled(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraSelectById(q.Id)
+	camera, err := service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		r.Code = 0
@@ -184,7 +185,7 @@ func CameraEnabled(c *gin.Context) {
 	if q.Enabled != 1 {
 		camera.OnlineStatus = 0
 	}
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
 		r.Code = 0
@@ -206,7 +207,7 @@ func CameraEnabled(c *gin.Context) {
 func RtmpPushChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -216,7 +217,7 @@ func RtmpPushChange(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraSelectById(q.Id)
+	camera, err := service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		r.Code = 0
@@ -225,7 +226,7 @@ func RtmpPushChange(c *gin.Context) {
 		return
 	}
 	camera.RtmpPushStatus = q.RtmpPushStatus
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("RtmpPushEnabled camera status %d error : %v", camera.Enabled, err)
 		r.Code = 0
@@ -248,7 +249,7 @@ func RtmpPushChange(c *gin.Context) {
 func CameraSaveVideoChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -258,7 +259,7 @@ func CameraSaveVideoChange(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraSelectById(q.Id)
+	camera, err := service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		r.Code = 0
@@ -267,7 +268,7 @@ func CameraSaveVideoChange(c *gin.Context) {
 		return
 	}
 	camera.SaveVideo = q.SaveVideo
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("SaveVideo camera status %d error : %v", camera.SaveVideo, err)
 		r.Code = 0
@@ -290,7 +291,7 @@ func CameraSaveVideoChange(c *gin.Context) {
 func CameraLiveChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -300,7 +301,7 @@ func CameraLiveChange(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraSelectById(q.Id)
+	camera, err := service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		r.Code = 0
@@ -309,7 +310,7 @@ func CameraLiveChange(c *gin.Context) {
 		return
 	}
 	camera.Live = q.Live
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("Live camera status %d error : %v", camera.Live, err)
 		r.Code = 0
@@ -330,7 +331,7 @@ func CameraLiveChange(c *gin.Context) {
 func CameraPlayAuthCodeReset(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	r := result.Result{Code: 1, Msg: ""}
-	q := models.Camera{}
+	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -340,7 +341,7 @@ func CameraPlayAuthCodeReset(c *gin.Context) {
 		return
 	}
 
-	camera, err := models.CameraSelectById(q.Id)
+	camera, err := service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		r.Code = 0
@@ -350,7 +351,7 @@ func CameraPlayAuthCodeReset(c *gin.Context) {
 	}
 	playAuthCode, _ := utils.UUID()
 	camera.PlayAuthCode = playAuthCode
-	_, err = models.CameraUpdate(camera)
+	_, err = service.CameraUpdate(camera)
 	if err != nil {
 		logs.Error("PlayAuthCode camera status %d error : %v", camera.PlayAuthCode, err)
 		r.Code = 0

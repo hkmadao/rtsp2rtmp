@@ -8,8 +8,9 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/flv"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 type IHttpFlvManager interface {
@@ -81,7 +82,7 @@ func NewHttpFlvWriter(
 		start:             false,
 	}
 
-	camera, err := models.CameraSelectOne(models.Camera{Code: code})
+	camera, err := service.CameraSelectOne(entity.Camera{Code: code})
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		return hfw
@@ -191,7 +192,7 @@ func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 	return nil
 }
 
-//Write extends to io.Writer
+// Write extends to io.Writer
 func (hfw *HttpFlvWriter) Write(p []byte) (n int, err error) {
 	// start := time.Now()
 	defer func() {

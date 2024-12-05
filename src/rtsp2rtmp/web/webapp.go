@@ -11,9 +11,9 @@ import (
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/controllers"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
 )
 
 var tokens sync.Map
@@ -124,7 +124,7 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
-//验证token
+// 验证token
 func Validate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/system/login" || strings.HasPrefix(c.Request.URL.Path, "/live/") ||

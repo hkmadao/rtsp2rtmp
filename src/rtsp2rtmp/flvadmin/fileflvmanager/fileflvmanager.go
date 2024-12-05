@@ -8,8 +8,9 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvwriter"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 type FileFlvManager struct {
@@ -54,7 +55,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		code:        code,
 		codecs:      codecs,
 	}
-	camera, err := models.CameraSelectOne(models.Camera{Code: code})
+	camera, err := service.CameraSelectOne(entity.Camera{Code: code})
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		return ffm
@@ -120,7 +121,7 @@ func (ffm *FileFlvManager) StopWrite() {
 	}()
 }
 
-//Write extends to writer.Writer
+// Write extends to writer.Writer
 func (ffm *FileFlvManager) flvWrite() {
 	defer func() {
 		if r := recover(); r != nil {

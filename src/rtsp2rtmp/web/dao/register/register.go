@@ -1,9 +1,10 @@
-package models
+package register
 
 import (
 	"github.com/beego/beego/v2/client/orm"
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	_ "github.com/lib/pq"
 )
 
@@ -38,6 +39,6 @@ func init() {
 
 func init() {
 	// 需要在init中注册定义的model
-	orm.RegisterModel(new(Camera))
-	orm.RegisterModel(new(CameraShare))
+	orm.RegisterModel(new(entity.Camera))
+	orm.RegisterModel(new(entity.CameraShare))
 }

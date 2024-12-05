@@ -7,8 +7,9 @@ import (
 
 	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/conf" // 必须先导入配置文件
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/task"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
+	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/register"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/task"
 
 	// "net/http"
 	// _ "net/http/pprof"

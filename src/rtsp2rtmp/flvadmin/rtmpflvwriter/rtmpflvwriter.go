@@ -7,8 +7,9 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtmp"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 type IRtmpFlvManager interface {
@@ -74,9 +75,9 @@ func (rfw *RtmpFlvWriter) StopWrite() {
 }
 
 func (rfw *RtmpFlvWriter) createConn() error {
-	var camera models.Camera
+	var camera entity.Camera
 	camera.Code = rfw.code
-	camera, err := models.CameraSelectOne(camera)
+	camera, err := service.CameraSelectOne(camera)
 	if err != nil {
 		logs.Error("not found camera : %s", rfw.code)
 		return err
@@ -91,7 +92,7 @@ func (rfw *RtmpFlvWriter) createConn() error {
 	return nil
 }
 
-//Write extends to writer.Writer
+// Write extends to writer.Writer
 func (rfw *RtmpFlvWriter) flvWrite() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -99,9 +100,9 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		}
 	}()
 
-	var camera models.Camera
+	var camera entity.Camera
 	camera.Code = rfw.code
-	camera, err := models.CameraSelectOne(camera)
+	camera, err := service.CameraSelectOne(camera)
 	if err != nil {
 		logs.Error("not found camera : %s", rfw.code)
 		return

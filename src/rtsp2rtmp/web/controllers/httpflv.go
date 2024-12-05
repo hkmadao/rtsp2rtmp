@@ -9,8 +9,9 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/result"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 func HttpFlvPlay(c *gin.Context) {
@@ -34,8 +35,8 @@ func HttpFlvPlay(c *gin.Context) {
 		Code: 1,
 		Msg:  "",
 	}
-	q := models.Camera{Code: code}
-	camera, err := models.CameraSelectOne(q)
+	q := entity.Camera{Code: code}
+	camera, err := service.CameraSelectOne(q)
 	if err != nil {
 		logs.Error("camera query error : %v", err)
 		r.Code = 0
@@ -51,8 +52,8 @@ func HttpFlvPlay(c *gin.Context) {
 		return
 	}
 	if method == "temp" {
-		csq := models.CameraShare{CameraId: camera.Id, AuthCode: authCode}
-		cs, err := models.CameraShareSelectOne(csq)
+		csq := entity.CameraShare{CameraId: camera.Id, AuthCode: authCode}
+		cs, err := service.CameraShareSelectOne(csq)
 		if err != nil {
 			logs.Error("CameraShareSelectOne error : %v", err)
 			r.Code = 0

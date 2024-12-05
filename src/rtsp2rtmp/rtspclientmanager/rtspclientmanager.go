@@ -8,10 +8,11 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtspv2"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/controllers"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclient"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 var rcmInstance *RtspClientManager
@@ -75,7 +76,7 @@ func (s *RtspClientManager) startConnections() {
 			logs.Error("rtspManager panic %v", r)
 		}
 	}()
-	es, err := models.CameraSelectAll()
+	es, err := service.CameraSelectAll()
 	if err != nil {
 		logs.Error("camera list query error: %s", err)
 		return
@@ -84,7 +85,7 @@ func (s *RtspClientManager) startConnections() {
 	for {
 		timeNow := time.Now()
 		if timeNow.After(timeTemp.Add(30 * time.Second)) {
-			es, err = models.CameraSelectAll()
+			es, err = service.CameraSelectAll()
 			if err != nil {
 				logs.Error("camera list query error: %s", err)
 				return
@@ -117,8 +118,8 @@ func (s *RtspClientManager) connRtsp(code string) {
 	}()
 	//放置信息表示已经开始
 	s.rcs.Store(code, struct{}{})
-	q := models.Camera{Code: code}
-	c, err := models.CameraSelectOne(q)
+	q := entity.Camera{Code: code}
+	c, err := service.CameraSelectOne(q)
 	if err != nil {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
@@ -140,7 +141,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
 		c.OnlineStatus = 0
 		if c.OnlineStatus == 1 {
-			models.CameraUpdate(c)
+			service.CameraUpdate(c)
 		}
 		return
 	}
@@ -148,7 +149,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 	// logs.Warn("camera: %s codecs: %v", code, session.CodecData)
 
 	c.OnlineStatus = 1
-	models.CameraUpdate(c)
+	service.CameraUpdate(c)
 
 	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
@@ -206,12 +207,12 @@ Loop:
 	}
 
 	//offline camera
-	camera, err := models.CameraSelectOne(q)
+	camera, err := service.CameraSelectOne(q)
 	if err != nil {
 		logs.Error("no camera error : %s", code)
 	} else {
 		camera.OnlineStatus = 0
-		models.CameraUpdate(camera)
+		service.CameraUpdate(camera)
 	}
 
 	logs.Error("camera: %s session Close", code)
