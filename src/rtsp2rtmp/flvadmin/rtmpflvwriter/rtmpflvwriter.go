@@ -82,7 +82,7 @@ func (rfw *RtmpFlvWriter) createConn() error {
 		logs.Error("not found camera : %s", rfw.code)
 		return err
 	}
-	rtmpConn, err := rtmp.Dial(camera.RtmpURL)
+	rtmpConn, err := rtmp.Dial(camera.RtmpUrl)
 	if err != nil {
 		logs.Error("rtmp client connection error : %v", err)
 		return err

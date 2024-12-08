@@ -9,8 +9,8 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
@@ -31,7 +31,7 @@ func HttpFlvPlay(c *gin.Context) {
 	method := uris[1]
 	code := uris[2]
 	authCode := uris[3]
-	r := result.Result{
+	r := common.Result{
 		Code: 1,
 		Msg:  "",
 	}

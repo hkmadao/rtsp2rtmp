@@ -4,6 +4,8 @@ import (
 	"github.com/beego/beego/v2/client/orm"
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/desc"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	_ "github.com/lib/pq"
 )
@@ -41,4 +43,14 @@ func init() {
 	// 需要在init中注册定义的model
 	orm.RegisterModel(new(entity.Camera))
 	orm.RegisterModel(new(entity.CameraShare))
+}
+
+var descMap = make(map[string]*common.EntityDesc)
+
+func init() {
+	descMap["Camera"] = desc.GetCameraDesc()
+}
+
+func GetDescMapByKey(key string) *common.EntityDesc {
+	return descMap[key]
 }

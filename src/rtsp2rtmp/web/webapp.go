@@ -12,8 +12,8 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
 )
 
 var tokens sync.Map
@@ -132,7 +132,7 @@ func Validate() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		r := result.Result{
+		r := common.Result{
 			Code: 1,
 			Msg:  "",
 		}
@@ -169,7 +169,7 @@ func Validate() gin.HandlerFunc {
 }
 
 func login(c *gin.Context) {
-	r := result.Result{
+	r := common.Result{
 		Code: 1,
 		Msg:  "",
 	}

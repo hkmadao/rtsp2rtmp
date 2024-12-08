@@ -128,9 +128,9 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("camera [%s] disabled : %v", code)
 		return
 	}
-	logs.Info(c.Code, "connect", c.RtspURL)
+	logs.Info(c.Code, "connect", c.RtspUrl)
 	rtspClientOptions := rtspv2.RTSPClientOptions{
-		URL:              c.RtspURL,
+		URL:              c.RtspUrl,
 		Debug:            false,
 		DialTimeout:      10 * time.Second,
 		ReadWriteTimeout: 10 * time.Second,

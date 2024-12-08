@@ -4,8 +4,8 @@ type SelectStatement struct {
 	Selects  []SelectExpr
 	From     []TableRef
 	Join     []JoinExpr
-	SqlWhere []ConditionExpression
-	Having   []ConditionExpression
+	SqlWhere *ConditionExpression
+	Having   *ConditionExpression
 	Orders   []OrderExpr
 }
 
@@ -24,12 +24,13 @@ type TableRef struct {
 type JoinExpr struct {
 	JoinType EJoinType
 	TableRef
-	On []ConditionExpression
+	On *ConditionExpression
 }
 
 type ConditionExpression struct {
 	ConditionType EConditionType
 	SimpleExprs   []SimpleExpr
+	Child         *ConditionExpression
 }
 
 type SimpleExpr struct {
@@ -49,6 +50,7 @@ type EValueType = uint32
 const (
 	String = iota
 	Number
+	Bool
 )
 
 type EOrderType = uint32
@@ -110,13 +112,13 @@ func (selectStatemet *SelectStatement) BuildJoin(joinExprs ...JoinExpr) *SelectS
 	return selectStatemet
 }
 
-func (selectStatemet *SelectStatement) BuildWhere(conditions ...ConditionExpression) *SelectStatement {
-	selectStatemet.SqlWhere = append(selectStatemet.SqlWhere, conditions...)
+func (selectStatemet *SelectStatement) BuildWhere(conditionExpr ConditionExpression) *SelectStatement {
+	selectStatemet.SqlWhere = &conditionExpr
 	return selectStatemet
 }
 
-func (selectStatemet *SelectStatement) BuildHaving(conditions ...ConditionExpression) *SelectStatement {
-	selectStatemet.Having = append(selectStatemet.Having, conditions...)
+func (selectStatemet *SelectStatement) BuildHaving(conditionExpr ConditionExpression) *SelectStatement {
+	selectStatemet.Having = &conditionExpr
 	return selectStatemet
 }
 

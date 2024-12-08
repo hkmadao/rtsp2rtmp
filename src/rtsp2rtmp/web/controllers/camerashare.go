@@ -7,14 +7,14 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 func CameraShareList(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	cameraId := c.Query("cameraId")
 	if cameraId == "" {
 		logs.Error("no cameraId found")
@@ -31,14 +31,14 @@ func CameraShareList(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	page := result.Page{Total: len(cameraShares), Page: cameraShares}
+	page := common.Page{Total: len(cameraShares), Page: cameraShares}
 	r.Data = page
 	c.JSON(http.StatusOK, r)
 }
 
 func CameraShareEdit(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{
+	r := common.Result{
 		Code: 1,
 		Msg:  "",
 	}
@@ -96,7 +96,7 @@ func CameraShareEdit(c *gin.Context) {
 
 func CameraShareDelete(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	id, b := c.Params.Get("id")
 	if !b {
 		r.Code = 0
@@ -120,7 +120,7 @@ func CameraShareDelete(c *gin.Context) {
 
 func CameraShareEnabled(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.CameraShare{}
 	err := c.BindJSON(&q)
 	if err != nil {

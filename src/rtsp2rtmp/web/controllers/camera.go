@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/result"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
 )
 
 func CameraList(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	cameras, err := service.CameraSelectAll()
 	if err != nil {
 		logs.Error("no camera found : %v", err)
@@ -24,14 +24,14 @@ func CameraList(c *gin.Context) {
 		c.JSON(http.StatusOK, r)
 		return
 	}
-	page := result.Page{Total: len(cameras), Page: cameras}
+	page := common.Page{Total: len(cameras), Page: cameras}
 	r.Data = page
 	c.JSON(http.StatusOK, r)
 }
 
 func CameraDetail(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	cameraId := c.Query("id")
 	if cameraId == "" {
 		logs.Error("no cameraId found")
@@ -54,7 +54,7 @@ func CameraDetail(c *gin.Context) {
 
 func CameraEdit(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{
+	r := common.Result{
 		Code: 1,
 		Msg:  "",
 	}
@@ -117,8 +117,8 @@ func CameraEdit(c *gin.Context) {
 	}
 	camera, _ := service.CameraSelectById(q.Id)
 	camera.Code = q.Code
-	camera.RtspURL = q.RtspURL
-	camera.RtmpURL = q.RtmpURL
+	camera.RtspUrl = q.RtspUrl
+	camera.RtmpUrl = q.RtmpUrl
 	// camera.Enabled = q.Enabled
 	_, err = service.CameraUpdate(camera)
 	if err != nil {
@@ -133,7 +133,7 @@ func CameraEdit(c *gin.Context) {
 
 func CameraDelete(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	id, b := c.Params.Get("id")
 	if !b {
 		r.Code = 0
@@ -162,7 +162,7 @@ func CameraDelete(c *gin.Context) {
 
 func CameraEnabled(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
@@ -206,7 +206,7 @@ func CameraEnabled(c *gin.Context) {
 
 func RtmpPushChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
@@ -248,7 +248,7 @@ func RtmpPushChange(c *gin.Context) {
 
 func CameraSaveVideoChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
@@ -290,7 +290,7 @@ func CameraSaveVideoChange(c *gin.Context) {
 
 func CameraLiveChange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
@@ -330,7 +330,7 @@ func CameraLiveChange(c *gin.Context) {
 
 func CameraPlayAuthCodeReset(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	r := result.Result{Code: 1, Msg: ""}
+	r := common.Result{Code: 1, Msg: ""}
 	q := entity.Camera{}
 	err := c.BindJSON(&q)
 	if err != nil {
