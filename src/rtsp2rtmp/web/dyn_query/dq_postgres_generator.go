@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-type DynQueryMysql struct {
+type DynQueryPostgres struct {
 }
 
-func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (sqlStr string, params []interface{}, err error) {
+func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStatement) (sqlStr string, params []interface{}, err error) {
 	if len(selectStatement.From) == 0 {
 		err = fmt.Errorf("from is empty")
 		return
@@ -19,10 +19,10 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	var selectTokens = make([]string, 0)
 	if len(selectStatement.Selects) == 0 {
 		var mainTable = selectStatement.From[0]
-		selectTokens = append(selectTokens, fmt.Sprintf("`%s`.*", mainTable.AliasName))
+		selectTokens = append(selectTokens, fmt.Sprintf("\"%s\".*", mainTable.AliasName))
 	} else {
 		for _, selectExpr := range selectStatement.Selects {
-			selectTokens = append(selectTokens, fmt.Sprintf("`%s`.`%s`", selectExpr.TableAliasName, selectExpr.ColumnName))
+			selectTokens = append(selectTokens, fmt.Sprintf("\"%s\".\"%s\"", selectExpr.TableAliasName, selectExpr.ColumnName))
 		}
 	}
 	tokens = append(tokens, "SELECT", strings.Join(selectTokens, ","))
@@ -30,7 +30,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	// from expr
 	var fromTokens = make([]string, 0)
 	for _, tableRef := range selectStatement.From {
-		fromTokens = append(fromTokens, fmt.Sprintf("`%s` `%s`", tableRef.TableName, tableRef.AliasName))
+		fromTokens = append(fromTokens, fmt.Sprintf("\"%s\" \"%s\"", tableRef.TableName, tableRef.AliasName))
 	}
 	tokens = append(tokens, "FROM", strings.Join(fromTokens, ","))
 
@@ -40,7 +40,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 		for _, joinExpr := range selectStatement.Join {
 			var joinTokens = make([]string, 0)
 			if joinExpr.JoinType == InnerJoin {
-				joinTokens = append(joinTokens, fmt.Sprintf("INNER JOIN `%s` `%s` ON", joinExpr.TableName, joinExpr.AliasName))
+				joinTokens = append(joinTokens, fmt.Sprintf("INNER JOIN \"%s\" \"%s\" ON", joinExpr.TableName, joinExpr.AliasName))
 				var conditionExpr = joinExpr.On
 				if nil == conditionExpr {
 					err = fmt.Errorf("inner join condition is empty")
@@ -51,10 +51,10 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 					return
 				}
 				var simpleExprs = conditionExpr.SimpleExprs
-				conditionToken := fmt.Sprintf("`%s`.`%s` = `%s`.`%s`", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
+				conditionToken := fmt.Sprintf("\"%s\".\"%s\" = \"%s\".\"%s\"", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
 				joinTokens = append(joinTokens, conditionToken)
 			} else if joinExpr.JoinType == LeftJoin {
-				joinTokens = append(joinTokens, fmt.Sprintf("LEFT JOIN `%s` `%s` ON", joinExpr.TableName, joinExpr.AliasName))
+				joinTokens = append(joinTokens, fmt.Sprintf("LEFT JOIN \"%s\" \"%s\" ON", joinExpr.TableName, joinExpr.AliasName))
 				var conditionExpr = joinExpr.On
 				if nil == conditionExpr {
 					err = fmt.Errorf("left join condition is empty")
@@ -65,10 +65,10 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 					return
 				}
 				var simpleExprs = conditionExpr.SimpleExprs
-				conditionToken := fmt.Sprintf("`%s`.`%s` = `%s`.`%s`", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
+				conditionToken := fmt.Sprintf("\"%s\".\"%s\" = \"%s\".\"%s\"", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
 				joinTokens = append(joinTokens, conditionToken)
 			} else if joinExpr.JoinType == RightJoin {
-				joinTokens = append(joinTokens, fmt.Sprintf("RIGHT JOIN `%s` `%s` ON", joinExpr.TableName, joinExpr.AliasName))
+				joinTokens = append(joinTokens, fmt.Sprintf("RIGHT JOIN \"%s\" \"%s\" ON", joinExpr.TableName, joinExpr.AliasName))
 				var conditionExpr = joinExpr.On
 				if nil == conditionExpr {
 					err = fmt.Errorf("right join condition is empty")
@@ -79,7 +79,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 					return
 				}
 				var simpleExprs = conditionExpr.SimpleExprs
-				conditionToken := fmt.Sprintf("`%s`.`%s` = `%s`.`%s`", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
+				conditionToken := fmt.Sprintf("\"%s\".\"%s\" = \"%s\".\"%s\"", simpleExprs[0].TableAliasName, simpleExprs[0].ColumnName, simpleExprs[1].TableAliasName, simpleExprs[1].ColumnName)
 				joinTokens = append(joinTokens, conditionToken)
 			} else {
 				err = fmt.Errorf("unsupport join: %d", joinExpr.JoinType)
@@ -95,7 +95,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	params = make([]interface{}, 0)
 	if nil != selectStatement.SqlWhere {
 		var conditionExpr = selectStatement.SqlWhere
-		conditionToken, whereParams, makeErr := makeConditionsTokenMysql(*conditionExpr)
+		conditionToken, whereParams, makeErr := makeConditionsTokenPostgres(*conditionExpr)
 		if makeErr != nil {
 			err = fmt.Errorf("make where token error: %v", makeErr)
 			return
@@ -109,7 +109,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	var havingTokens = make([]string, 0)
 	if nil != selectStatement.Having {
 		var conditionExpr = selectStatement.Having
-		conditionToken, havingParams, makeErr := makeConditionsTokenMysql(*conditionExpr)
+		conditionToken, havingParams, makeErr := makeConditionsTokenPostgres(*conditionExpr)
 		if makeErr != nil {
 			err = fmt.Errorf("make having token error: %v", makeErr)
 			return
@@ -124,9 +124,9 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	if len(selectStatement.Orders) > 0 {
 		for _, orderExpr := range selectStatement.Orders {
 			if orderExpr.OrderType == ASC {
-				orderTokens = append(orderTokens, fmt.Sprintf("`%s`.`%s` ASC", orderExpr.TableAliasName, orderExpr.ColumnName))
+				orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" ASC", orderExpr.TableAliasName, orderExpr.ColumnName))
 			} else if orderExpr.OrderType == DESC {
-				orderTokens = append(orderTokens, fmt.Sprintf("`%s`.`%s` DESC", orderExpr.TableAliasName, orderExpr.ColumnName))
+				orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" DESC", orderExpr.TableAliasName, orderExpr.ColumnName))
 			} else {
 				err = fmt.Errorf("unsupport OrderType: %d", orderExpr.OrderType)
 				return
@@ -139,7 +139,7 @@ func (dynQueryMysql *DynQueryMysql) BuildSql(selectStatement SelectStatement) (s
 	return
 }
 
-func makeConditionsTokenMysql(conditionExpr ConditionExpression) (conditionToken string, params []interface{}, err error) {
+func makeConditionsTokenPostgres(conditionExpr ConditionExpression) (conditionToken string, params []interface{}, err error) {
 	var logicCode = "AND"
 	if conditionExpr.ConditionType == OR {
 		logicCode = "OR"
@@ -148,7 +148,7 @@ func makeConditionsTokenMysql(conditionExpr ConditionExpression) (conditionToken
 	if len(conditionExpr.SimpleExprs) > 0 {
 		for _, simpleExpr := range conditionExpr.SimpleExprs {
 			var simpleExprTokens = make([]string, 0)
-			simpleExprTokens = append(simpleExprTokens, fmt.Sprintf("`%s`.`%s`", simpleExpr.TableAliasName, simpleExpr.ColumnName))
+			simpleExprTokens = append(simpleExprTokens, fmt.Sprintf("\"%s\".\"%s\"", simpleExpr.TableAliasName, simpleExpr.ColumnName))
 			if simpleExpr.ExprType == IsNull {
 				simpleExprTokens = append(simpleExprTokens, "IS NULL")
 			} else if simpleExpr.ExprType == NotNull {

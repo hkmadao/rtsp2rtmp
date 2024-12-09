@@ -81,12 +81,11 @@ func getDescAttr(
 }
 
 func makeJoinSelect(
-	joinExprs []JoinExpr,
 	attrs []string,
 	refEntityName string,
 	refEntityAliasName string,
 	index int,
-) (err error) {
+) (joinExprs []JoinExpr, err error) {
 	if len(attrs) < 1 {
 		return
 	}
@@ -108,7 +107,7 @@ func makeJoinSelect(
 	var joinExpr = new(JoinExpr)
 	joinExpr.JoinType = LeftJoin
 	joinExpr.TableName = ref_desc.EntityInfo.TableName
-	var alias_name = strings.Join(attrs[:index], ".")
+	var alias_name = strings.Join(attrs[:index+1], ".")
 	var aliasNameMd5 = Md5(alias_name)
 	joinExpr.AliasName = aliasNameMd5
 	if attr_info.DataType == common.DATA_TYPE_REF || attr_info.DataType == common.DATA_TYPE_SINGLE_REF || attr_info.DataType == common.DATA_TYPE_AGG_REF || attr_info.DataType == common.DATA_TYPE_AGG_SINGLE_REF {
@@ -119,7 +118,7 @@ func makeJoinSelect(
 		}
 		var on = new(ConditionExpression)
 		on.ConditionType = AND
-		var simpleExprs = []SimpleExpr{SimpleExpr{}, SimpleExpr{}}
+		var simpleExprs = make([]SimpleExpr, 2)
 		simpleExprs[0].TableAliasName = refEntityAliasName
 		simpleExprs[0].ColumnName = parent_desc.PkAttributeInfo.ColumnName
 		simpleExprs[1].TableAliasName = aliasNameMd5
@@ -134,7 +133,7 @@ func makeJoinSelect(
 		}
 		var on = new(ConditionExpression)
 		on.ConditionType = AND
-		var simpleExprs = []SimpleExpr{SimpleExpr{}, SimpleExpr{}}
+		var simpleExprs = make([]SimpleExpr, 2)
 		simpleExprs[0].TableAliasName = refEntityAliasName
 		simpleExprs[0].ColumnName = parent_desc.PkAttributeInfo.ColumnName
 		simpleExprs[1].TableAliasName = aliasNameMd5
@@ -145,7 +144,12 @@ func makeJoinSelect(
 	joinExprs = append(joinExprs, *joinExpr)
 	var next_index = index + 1
 	if len(attrs) > next_index {
-		makeJoinSelect(joinExprs, attrs, attr_info.OutEntityName, aliasNameMd5, next_index)
+		child_joinExprs, err_child := makeJoinSelect(attrs, attr_info.OutEntityName, aliasNameMd5, next_index)
+		if err_child != nil {
+			err = err_child
+			return
+		}
+		joinExprs = append(joinExprs, child_joinExprs...)
 	}
 	return
 }
@@ -225,12 +229,11 @@ func makeCondition(
 	// parent level node
 	var simple_exprs, err_make = makeSimpleExpr(
 		logic_node,
-		logic_node.LogicOperatorCode == common.LOGIC_OPERATOR_CODE_AND,
 		main_table_alias,
 		main_entity_name,
 	)
 	if err_make != nil {
-		err = fmt.Errorf("Make_condition error: %v", err_make)
+		err = fmt.Errorf("makeCondition error: %v", err_make)
 		return
 	}
 
@@ -260,16 +263,12 @@ func recursionMakeSimpleExpr(
 		if len(sub_logic_node.FilterNodes) == 0 {
 			return
 		}
-		conditionExpr = &ConditionExpression{
-			SimpleExprs: make([]SimpleExpr, 0),
-		}
 		conditionExpr.ConditionType = AND
 		if sub_logic_node.LogicOperatorCode == common.LOGIC_OPERATOR_CODE_OR {
 			conditionExpr.ConditionType = OR
 		}
 		var sub_simple_exprs, err_make = makeSimpleExpr(
 			sub_logic_node,
-			sub_logic_node.LogicOperatorCode == common.LOGIC_OPERATOR_CODE_AND,
 			main_table_alias,
 			main_entity_name,
 		)
@@ -291,7 +290,6 @@ func recursionMakeSimpleExpr(
 
 func makeSimpleExpr(
 	logic_node *common.AqLogicNode,
-	fg_and bool,
 	main_table_alias string,
 	main_entity_name string,
 ) (simpleExprs []SimpleExpr, err error) {
@@ -300,7 +298,6 @@ func makeSimpleExpr(
 		var simpleExpr, err_build = buildFilter(
 			filter_node,
 			main_entity_name,
-			fg_and,
 			main_table_alias,
 			filter_node.OperatorCode,
 		)
@@ -316,13 +313,12 @@ func makeSimpleExpr(
 func buildFilter(
 	filter_node common.AqFilterNode,
 	main_entity_name string,
-	fg_and bool,
 	main_table_alias string,
 	operator_code common.EOperatorCode,
 ) (simpleExpr SimpleExpr, err error) {
 	if strings.Contains(filter_node.Name, ".") {
 		var names = strings.Split(filter_node.Name, ".")
-		var alias_name = strings.Join(names[:len(names)-2], ".")
+		var alias_name = strings.Join(names[:len(names)-1], ".")
 		var attr_info, err_get = getDescAttr(names, main_entity_name, 0)
 		if err_get != nil {
 			err = fmt.Errorf("build_filter error: %v", err_get)
@@ -370,12 +366,12 @@ func buildFilterByOperatorCode(
 	fg_md5_alias_name bool,
 ) (simpleExpr SimpleExpr, err error) {
 	if operator_code == common.OPERATOR_CODE_EQUAL {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			Equal,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -383,12 +379,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_NOT_EQUAL {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			NotEqual,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -396,12 +392,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_LT {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			LT,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -409,12 +405,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_LTE {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			LTE,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -422,12 +418,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_GT {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			GT,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -435,12 +431,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_GTE {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			GTE,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -448,18 +444,36 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_IN {
-		simpleExpr, err = makeManyParamCondition(In, alias_name, attr_info, filter_node.FilterParams, fg_md5_alias_name)
+		simpleExpr, err = makeParamCondition(
+			In,
+			alias_name,
+			attr_info,
+			filter_node.FilterParams,
+			fg_md5_alias_name,
+		)
+		if err != nil {
+			err = fmt.Errorf("build_filter_by_operator_code error: %v", err)
+			return
+		}
+	} else if operator_code == common.OPERATOR_CODE_NOT_IN {
+		simpleExpr, err = makeParamCondition(
+			NotIn,
+			alias_name,
+			attr_info,
+			filter_node.FilterParams,
+			fg_md5_alias_name,
+		)
 		if err != nil {
 			err = fmt.Errorf("build_filter_by_operator_code error: %v", err)
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_LIKE {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			Like,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -467,12 +481,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_LEFT_LIKE {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			LeftLike,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -480,12 +494,12 @@ func buildFilterByOperatorCode(
 			return
 		}
 	} else if operator_code == common.OPERATOR_CODE_RIGHT_LIKE {
-		var param = filter_node.FilterParams[0]
-		simpleExpr, err = makeOneParamCondition(
+		var params = filter_node.FilterParams
+		simpleExpr, err = makeParamCondition(
 			RightLike,
 			alias_name,
 			attr_info,
-			param,
+			params,
 			fg_md5_alias_name,
 		)
 		if err != nil {
@@ -499,33 +513,7 @@ func buildFilterByOperatorCode(
 	return
 }
 
-func makeOneParamCondition(
-	exprType EExprType,
-	alias_name string,
-	attr_info common.AttributeInfo,
-	v interface{},
-	fg_md5_alias_name bool,
-) (expr_temp SimpleExpr, err error) {
-	if fg_md5_alias_name {
-		alias_name = Md5(alias_name)
-	}
-	valueType, err := GetValueType(attr_info)
-	if err != nil {
-		err = fmt.Errorf("make condition error: attr: %s unsupport value type: %s", attr_info.Name, attr_info.ValueType)
-		return
-	}
-
-	expr_temp = SimpleExpr{
-		ExprType:  exprType,
-		ValueType: valueType,
-		Values:    []string{fmt.Sprintf("%s", v)},
-	}
-	expr_temp.TableAliasName = alias_name
-	expr_temp.ColumnName = attr_info.ColumnName
-	return
-}
-
-func makeManyParamCondition(
+func makeParamCondition(
 	exprType EExprType,
 	alias_name string,
 	attr_info common.AttributeInfo,
@@ -535,28 +523,23 @@ func makeManyParamCondition(
 	if fg_md5_alias_name {
 		alias_name = Md5(alias_name)
 	}
-	valueType, err := GetValueType(attr_info)
+	valueType, err := getValueType(attr_info)
 	if err != nil {
 		err = fmt.Errorf("make condition error: attr: %s unsupport value type: %s", attr_info.Name, attr_info.ValueType)
 		return
 	}
 
-	var strValues = make([]string, len(values))
-	for _, v := range values {
-		strValues = append(strValues, fmt.Sprintf("%s", v))
-	}
-
 	expr_temp = SimpleExpr{
 		ExprType:  exprType,
 		ValueType: valueType,
-		Values:    strValues,
+		Values:    values,
 	}
 	expr_temp.TableAliasName = alias_name
 	expr_temp.ColumnName = attr_info.ColumnName
 	return
 }
 
-func GetValueType(attr_info common.AttributeInfo) (valueType EValueType, err error) {
+func getValueType(attr_info common.AttributeInfo) (valueType EValueType, err error) {
 	if attr_info.ValueType == common.VALUE_TYPE_STRING {
 		valueType = String
 		return
@@ -575,7 +558,7 @@ func GetValueType(attr_info common.AttributeInfo) (valueType EValueType, err err
 func MakeSqlByCondition(
 	aq_condition common.AqCondition,
 	main_entity_name string,
-) (sqlStr string, err error) {
+) (sqlStr string, params []interface{}, err error) {
 	var mainDesc = register.GetDescMapByKey(main_entity_name)
 	var main_table_name = mainDesc.EntityInfo.TableName
 	var main_table_alias = mainDesc.EntityInfo.TableName
@@ -595,12 +578,15 @@ func MakeSqlByCondition(
 	// selectExpr.ColumnName = "*"
 	selectStatemet.Selects = make([]SelectExpr, 0)
 
-	var from = make([]TableRef, 0)
+	var from = make([]TableRef, 1)
 	from[0] = TableRef{TableName: main_table_name, AliasName: main_table_alias}
 	selectStatemet.From = from
 
-	var jonExprs = make([]JoinExpr, 0)
-	makeJoinSelect(jonExprs, join_names, main_entity_name, main_table_alias, 0)
+	jonExprs, err := makeJoinSelect(join_names, main_entity_name, main_table_alias, 0)
+	if err != nil {
+		err = fmt.Errorf("makeSqlByCondition error: %v", err)
+		return
+	}
 	selectStatemet.Join = jonExprs
 
 	var conditionExpr = ConditionExpression{}
@@ -625,16 +611,32 @@ func MakeSqlByCondition(
 		return
 	}
 
-	var dynQuery, err_dyn_query = NewDynQuery("mysql")
+	var dynQuery, err_dyn_query = NewDynQuery()
 	if nil != err_dyn_query {
 		err = fmt.Errorf("makeSqlByCondition error: %v", err_dyn_query)
 		return
 	}
 
-	sqlStr, err = dynQuery.BuildSql(selectStatemet)
+	sqlStr, params, err = dynQuery.BuildSql(selectStatemet)
 	if err != nil {
 		err = fmt.Errorf("makeSqlByCondition error: %v", err)
 		return
+	}
+	for index, param := range params {
+		switch param := param.(type) {
+		case int:
+			fmt.Println(fmt.Sprintf("%v", param) + " type is int")
+			params[index] = param
+		case string:
+			fmt.Println(fmt.Sprintf("%v", param) + " type is string")
+			params[index] = param
+		case bool:
+			fmt.Println(fmt.Sprintf("%v", param) + " type is bool")
+			params[index] = param
+		default:
+			fmt.Println(fmt.Sprintf("%v", param) + " unsupport type")
+		}
+
 	}
 
 	return

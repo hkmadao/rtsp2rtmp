@@ -14,6 +14,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
+	base_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/base"
 )
 
 var tokens sync.Map
@@ -63,6 +64,7 @@ func (w *web) webRun() {
 
 	router.GET("/live/:method/:code/:authCode.flv", controllers.HttpFlvPlay)
 
+	router.POST("/camera/aq", base_controller.CameraAq)
 	router.GET("/camera/list", controllers.CameraList)
 	router.GET("/camera/detail", controllers.CameraDetail)
 	router.POST("/camera/edit", controllers.CameraEdit)
@@ -127,6 +129,15 @@ func Cors() gin.HandlerFunc {
 // 验证token
 func Validate() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		security, err := config.Bool("server.security")
+		if err != nil {
+			logs.Error("get server security error: %v. \n use default true", err)
+			security = true
+		}
+		if !security {
+			c.Next()
+			return
+		}
 		if c.Request.URL.Path == "/system/login" || strings.HasPrefix(c.Request.URL.Path, "/live/") ||
 			strings.HasPrefix(c.Request.URL.Path, "/rtsp2rtmp") {
 			c.Next()

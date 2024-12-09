@@ -37,7 +37,7 @@ type SimpleExpr struct {
 	ExprType EExprType
 	ColumnRef
 	ValueType EValueType
-	Values    []string
+	Values    []interface{}
 }
 
 type OrderExpr struct {

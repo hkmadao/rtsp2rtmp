@@ -49,6 +49,7 @@ var descMap = make(map[string]*common.EntityDesc)
 
 func init() {
 	descMap["Camera"] = desc.GetCameraDesc()
+	descMap["CameraShare"] = desc.GetCameraShareDesc()
 }
 
 func GetDescMapByKey(key string) *common.EntityDesc {
