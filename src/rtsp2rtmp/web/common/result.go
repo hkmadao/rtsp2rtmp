@@ -41,3 +41,19 @@ type DeleteRefErrorMessageVO struct {
 	// 引用类名
 	RefClassName string `json:"refClassName"`
 }
+
+func ErrorResult(msg string) AppResult {
+	return AppResult{Status: 1, Message: msg}
+}
+
+func SuccessResultData(data interface{}) AppResult {
+	return AppResult{Status: 1, Data: data}
+}
+
+func SuccessResultMsg(msg string) AppResult {
+	return AppResult{Status: 1, Message: msg}
+}
+
+func SuccessResultWithMsg(msg string, data interface{}) AppResult {
+	return AppResult{Status: 1, Message: msg, Data: data}
+}

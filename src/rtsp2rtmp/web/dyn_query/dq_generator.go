@@ -7,10 +7,21 @@ import (
 )
 
 type DynQuery interface {
-	BuildSql(selectStatement SelectStatement) (string, []interface{}, error)
+	newDynQuery(selectStatement SelectStatement) DynQuery
+	//return row sql string
+	BuildCountSql() (rowSql string, params []interface{}, err error)
+	//return row sql string
+	BuildPageSql(pageIndex uint64, pageSize uint64) (rowSql string, params []interface{}, err error)
+	//return row sql string
+	BuildSql(fgCount bool) (rowSql string, params []interface{}, err error)
+	// return condition sql string and param list.
+	// for example:
+	//
+	//	`user_name` = ? AND `code` = ? AND (`enabled` = ? OR `status` = ?)
+	makeConditionsToken(conditionExpr ConditionExpression) (conditionSql string, params []interface{}, err error)
 }
 
-func NewDynQuery() (qb DynQuery, err error) {
+func NewDynQuery(selectStatement SelectStatement) (qb DynQuery, err error) {
 	driver, err := config.String("server.database.driver")
 	if err != nil {
 		err = errors.New("database driver param is null")
@@ -21,7 +32,7 @@ func NewDynQuery() (qb DynQuery, err error) {
 	} else if driver == "tidb" {
 		qb = new(DynQueryTidb)
 	} else if driver == "postgres" {
-		qb = new(DynQueryPostgres)
+		qb = new(DynQueryPostgres).newDynQuery(selectStatement)
 	} else if driver == "sqlite" {
 		qb = new(DynQuerySqlite)
 	} else {

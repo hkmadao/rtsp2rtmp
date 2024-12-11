@@ -2,7 +2,7 @@ package dyn_query
 
 type SelectStatement struct {
 	Selects  []SelectExpr
-	From     []TableRef
+	From     []FromExpr
 	Join     []JoinExpr
 	SqlWhere *ConditionExpression
 	Having   *ConditionExpression
@@ -12,6 +12,7 @@ type SelectStatement struct {
 type SelectExpr = ColumnRef
 
 type ColumnRef struct {
+	FgPrimary      bool
 	TableAliasName string
 	ColumnName     string
 }
@@ -19,6 +20,11 @@ type ColumnRef struct {
 type TableRef struct {
 	AliasName string
 	TableName string
+}
+
+type FromExpr struct {
+	TableRef
+	Columns []ColumnRef
 }
 
 type JoinExpr struct {
@@ -102,8 +108,8 @@ func (selectStatemet *SelectStatement) BuildSelect(selectExprs ...SelectExpr) *S
 	return selectStatemet
 }
 
-func (selectStatemet *SelectStatement) BuildFrom(tableRefs ...TableRef) *SelectStatement {
-	selectStatemet.From = append(selectStatemet.From, tableRefs...)
+func (selectStatemet *SelectStatement) BuildFrom(fromExprs ...FromExpr) *SelectStatement {
+	selectStatemet.From = append(selectStatemet.From, fromExprs...)
 	return selectStatemet
 }
 

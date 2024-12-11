@@ -1,4 +1,5 @@
 server:
+    security: true
     user:
         name: admin
         password: admin

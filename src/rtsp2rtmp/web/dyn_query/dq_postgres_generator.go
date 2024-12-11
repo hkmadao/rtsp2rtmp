@@ -6,10 +6,34 @@ import (
 )
 
 type DynQueryPostgres struct {
+	selectStatement SelectStatement
 }
 
-func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStatement) (sqlStr string, params []interface{}, err error) {
-	if len(selectStatement.From) == 0 {
+func (dynQuery *DynQueryPostgres) newDynQuery(selectStatement SelectStatement) DynQuery {
+	dynQuery.selectStatement = selectStatement
+	return dynQuery
+}
+
+func (dynQuery *DynQueryPostgres) BuildCountSql() (sqlStr string, params []interface{}, err error) {
+	return dynQuery.BuildSql(true)
+}
+
+func (dynQuery *DynQueryPostgres) BuildPageSql(pageIndex uint64, pageSize uint64) (sqlStr string, params []interface{}, err error) {
+	sqlStr, params, err = dynQuery.BuildSql(false)
+	if err != nil {
+		return
+	}
+	startRow := (pageIndex - 1) * pageSize
+	sqlStr = sqlStr + fmt.Sprintf(" LIMIT %d OFFSET %d", pageSize, startRow)
+	return
+}
+
+func (dynQuery *DynQueryPostgres) BuildSql(fgCount bool) (sqlStr string, params []interface{}, err error) {
+	if len(dynQuery.selectStatement.Selects) == 0 {
+		err = fmt.Errorf("selects is empty")
+		return
+	}
+	if len(dynQuery.selectStatement.From) == 0 {
 		err = fmt.Errorf("from is empty")
 		return
 	}
@@ -17,11 +41,24 @@ func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStateme
 
 	// select expr
 	var selectTokens = make([]string, 0)
-	if len(selectStatement.Selects) == 0 {
-		var mainTable = selectStatement.From[0]
-		selectTokens = append(selectTokens, fmt.Sprintf("\"%s\".*", mainTable.AliasName))
+	if fgCount {
+		var primaryColumn *SelectExpr
+		for _, value := range dynQuery.selectStatement.Selects {
+			if value.FgPrimary {
+				selectExpr := SelectExpr{}
+				selectExpr.FgPrimary = true
+				selectExpr.ColumnName = value.ColumnName
+				selectExpr.TableAliasName = value.TableAliasName
+				primaryColumn = &selectExpr
+			}
+		}
+		if nil == primaryColumn {
+			err = fmt.Errorf("primary column is not set")
+			return
+		}
+		selectTokens = append(selectTokens, fmt.Sprintf("COUNT(\"%s\".\"%s\")", primaryColumn.TableAliasName, primaryColumn.ColumnName))
 	} else {
-		for _, selectExpr := range selectStatement.Selects {
+		for _, selectExpr := range dynQuery.selectStatement.Selects {
 			selectTokens = append(selectTokens, fmt.Sprintf("\"%s\".\"%s\"", selectExpr.TableAliasName, selectExpr.ColumnName))
 		}
 	}
@@ -29,15 +66,15 @@ func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStateme
 
 	// from expr
 	var fromTokens = make([]string, 0)
-	for _, tableRef := range selectStatement.From {
+	for _, tableRef := range dynQuery.selectStatement.From {
 		fromTokens = append(fromTokens, fmt.Sprintf("\"%s\" \"%s\"", tableRef.TableName, tableRef.AliasName))
 	}
 	tokens = append(tokens, "FROM", strings.Join(fromTokens, ","))
 
 	// join expr
 	var fullJoinTokens = make([]string, 0)
-	if len(selectStatement.Join) > 0 {
-		for _, joinExpr := range selectStatement.Join {
+	if len(dynQuery.selectStatement.Join) > 0 {
+		for _, joinExpr := range dynQuery.selectStatement.Join {
 			var joinTokens = make([]string, 0)
 			if joinExpr.JoinType == InnerJoin {
 				joinTokens = append(joinTokens, fmt.Sprintf("INNER JOIN \"%s\" \"%s\" ON", joinExpr.TableName, joinExpr.AliasName))
@@ -93,9 +130,9 @@ func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStateme
 	// where expr
 	var whereTokens = make([]string, 0)
 	params = make([]interface{}, 0)
-	if nil != selectStatement.SqlWhere {
-		var conditionExpr = selectStatement.SqlWhere
-		conditionToken, whereParams, makeErr := makeConditionsTokenPostgres(*conditionExpr)
+	if nil != dynQuery.selectStatement.SqlWhere {
+		var conditionExpr = dynQuery.selectStatement.SqlWhere
+		conditionToken, whereParams, makeErr := dynQuery.makeConditionsToken(*conditionExpr)
 		if makeErr != nil {
 			err = fmt.Errorf("make where token error: %v", makeErr)
 			return
@@ -107,9 +144,9 @@ func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStateme
 
 	// having expr
 	var havingTokens = make([]string, 0)
-	if nil != selectStatement.Having {
-		var conditionExpr = selectStatement.Having
-		conditionToken, havingParams, makeErr := makeConditionsTokenPostgres(*conditionExpr)
+	if nil != dynQuery.selectStatement.Having {
+		var conditionExpr = dynQuery.selectStatement.Having
+		conditionToken, havingParams, makeErr := dynQuery.makeConditionsToken(*conditionExpr)
 		if makeErr != nil {
 			err = fmt.Errorf("make having token error: %v", makeErr)
 			return
@@ -121,25 +158,27 @@ func (dynQueryPostgres *DynQueryPostgres) BuildSql(selectStatement SelectStateme
 
 	// order expr
 	var orderTokens = make([]string, 0)
-	if len(selectStatement.Orders) > 0 {
-		for _, orderExpr := range selectStatement.Orders {
-			if orderExpr.OrderType == ASC {
-				orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" ASC", orderExpr.TableAliasName, orderExpr.ColumnName))
-			} else if orderExpr.OrderType == DESC {
-				orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" DESC", orderExpr.TableAliasName, orderExpr.ColumnName))
-			} else {
-				err = fmt.Errorf("unsupport OrderType: %d", orderExpr.OrderType)
-				return
+	if !fgCount {
+		if len(dynQuery.selectStatement.Orders) > 0 {
+			for _, orderExpr := range dynQuery.selectStatement.Orders {
+				if orderExpr.OrderType == ASC {
+					orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" ASC", orderExpr.TableAliasName, orderExpr.ColumnName))
+				} else if orderExpr.OrderType == DESC {
+					orderTokens = append(orderTokens, fmt.Sprintf("\"%s\".\"%s\" DESC", orderExpr.TableAliasName, orderExpr.ColumnName))
+				} else {
+					err = fmt.Errorf("unsupport OrderType: %d", orderExpr.OrderType)
+					return
+				}
 			}
+			tokens = append(tokens, "ORDER BY", strings.Join(orderTokens, ","))
 		}
-		tokens = append(tokens, "ORDER BY", strings.Join(orderTokens, ","))
 	}
 
 	sqlStr = strings.Join(tokens, " ")
 	return
 }
 
-func makeConditionsTokenPostgres(conditionExpr ConditionExpression) (conditionToken string, params []interface{}, err error) {
+func (dynQuery *DynQueryPostgres) makeConditionsToken(conditionExpr ConditionExpression) (conditionToken string, params []interface{}, err error) {
 	var logicCode = "AND"
 	if conditionExpr.ConditionType == OR {
 		logicCode = "OR"
@@ -197,7 +236,7 @@ func makeConditionsTokenPostgres(conditionExpr ConditionExpression) (conditionTo
 		}
 		var child = conditionExpr.Child
 		if nil != child && len(child.SimpleExprs) > 0 {
-			childConditionToken, childParams, child_err := makeConditionsTokenPostgres(*child)
+			childConditionToken, childParams, child_err := dynQuery.makeConditionsToken(*child)
 			if child_err != nil {
 				err = child_err
 				return

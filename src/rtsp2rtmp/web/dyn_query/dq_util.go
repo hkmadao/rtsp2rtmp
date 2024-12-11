@@ -155,10 +155,10 @@ func makeJoinSelect(
 }
 
 func makeColumnOrderBy(
-	orderExprs []OrderExpr,
 	orders []common.AqOrder,
 	main_entity_name string,
-) (err error) {
+	main_table_alias string,
+) (orderExprs []OrderExpr, err error) {
 	for _, order := range orders {
 		if strings.ToUpper(order.Direction) == common.ORDER_DIRECTION_ASC {
 			var names = strings.Split(order.Property, ".")
@@ -170,10 +170,11 @@ func makeColumnOrderBy(
 				var orderExpr = OrderExpr{
 					OrderType: ASC,
 				}
+				orderExpr.TableAliasName = main_table_alias
 				orderExpr.ColumnName = attr_info.ColumnName
 				orderExprs = append(orderExprs, orderExpr)
 			} else {
-				var alias_name = strings.Join(names[:len(names)-2], ".")
+				var alias_name = strings.Join(names[:len(names)-1], ".")
 				var attr_info, err_get = getDescAttr(names, main_entity_name, 0)
 				if err_get != nil {
 					err = fmt.Errorf("make_column_order_by error: %v", err_get)
@@ -195,10 +196,11 @@ func makeColumnOrderBy(
 				var orderExpr = OrderExpr{
 					OrderType: DESC,
 				}
+				orderExpr.TableAliasName = main_table_alias
 				orderExpr.ColumnName = attr_info.ColumnName
 				orderExprs = append(orderExprs, orderExpr)
 			} else {
-				var alias_name = strings.Join(names[:len(names)-2], ".")
+				var alias_name = strings.Join(names[:len(names)-1], ".")
 				var attr_info, err_get = getDescAttr(names, main_entity_name, 0)
 				if err_get != nil {
 					err = fmt.Errorf("make_column_order_by error: %v", err_get)
@@ -555,10 +557,14 @@ func getValueType(attr_info common.AttributeInfo) (valueType EValueType, err err
 	}
 }
 
-func MakeSqlByCondition(
+type QuerySqlBuilder struct {
+	dynQuery DynQuery
+}
+
+func NewQuerySqlBuilder(
 	aq_condition common.AqCondition,
 	main_entity_name string,
-) (sqlStr string, params []interface{}, err error) {
+) (builder *QuerySqlBuilder, err error) {
 	var mainDesc = register.GetDescMapByKey(main_entity_name)
 	var main_table_name = mainDesc.EntityInfo.TableName
 	var main_table_alias = mainDesc.EntityInfo.TableName
@@ -573,13 +579,34 @@ func MakeSqlByCondition(
 	}
 	sort.Sort(ByLength(join_names))
 
-	// var selectExpr = SelectExpr{}
-	// selectExpr.TableAliasName = main_table_alias
-	// selectExpr.ColumnName = "*"
-	selectStatemet.Selects = make([]SelectExpr, 0)
+	var parent_desc = register.GetDescMapByKey(main_entity_name)
+	if parent_desc == nil {
+		err = fmt.Errorf("can not get description info: %s", main_entity_name)
+		return
+	}
+	var mainColumns = make([]ColumnRef, 0)
+	for _, value := range parent_desc.AttributeInfoMap {
+		if value.DataType == common.DATA_TYPE_AGG_REF ||
+			value.DataType == common.DATA_TYPE_AGG_SINGLE_REF ||
+			value.DataType == common.DATA_TYPE_ARRAY ||
+			value.DataType == common.DATA_TYPE_SINGLE {
+			continue
+		}
+		var column = ColumnRef{}
+		if value.DataType == common.DATA_TYPE_INTERNAL_PK {
+			column.FgPrimary = true
+		}
+		column.ColumnName = value.ColumnName
+		column.TableAliasName = main_table_alias
+		mainColumns = append(mainColumns, column)
+	}
 
-	var from = make([]TableRef, 1)
-	from[0] = TableRef{TableName: main_table_name, AliasName: main_table_alias}
+	selectStatemet.Selects = mainColumns
+
+	var from = make([]FromExpr, 1)
+	from[0] = FromExpr{Columns: mainColumns}
+	from[0].TableName = main_table_name
+	from[0].AliasName = main_table_alias
 	selectStatemet.From = from
 
 	jonExprs, err := makeJoinSelect(join_names, main_entity_name, main_table_alias, 0)
@@ -605,40 +632,51 @@ func MakeSqlByCondition(
 	selectStatemet.SqlWhere = &conditionExpr
 
 	var orderExprs = make([]OrderExpr, 0)
-	err = makeColumnOrderBy(orderExprs, orders, main_entity_name)
+	orderExprs, err = makeColumnOrderBy(orders, main_entity_name, main_table_alias)
 	if err != nil {
 		err = fmt.Errorf("makeSqlByCondition error: %v", err)
 		return
 	}
+	selectStatemet.Orders = orderExprs
 
-	var dynQuery, err_dyn_query = NewDynQuery()
+	var dynQuery, err_dyn_query = NewDynQuery(selectStatemet)
 	if nil != err_dyn_query {
 		err = fmt.Errorf("makeSqlByCondition error: %v", err_dyn_query)
 		return
 	}
 
-	sqlStr, params, err = dynQuery.BuildSql(selectStatemet)
+	builder = new(QuerySqlBuilder)
+	builder.dynQuery = dynQuery
+
+	return
+}
+
+func (builder QuerySqlBuilder) GetCountSql() (sqlStr string, params []interface{}, err error) {
+	sqlStr, params, err = builder.dynQuery.BuildCountSql()
 	if err != nil {
 		err = fmt.Errorf("makeSqlByCondition error: %v", err)
 		return
 	}
-	for index, param := range params {
-		switch param := param.(type) {
-		case int:
-			fmt.Println(fmt.Sprintf("%v", param) + " type is int")
-			params[index] = param
-		case string:
-			fmt.Println(fmt.Sprintf("%v", param) + " type is string")
-			params[index] = param
-		case bool:
-			fmt.Println(fmt.Sprintf("%v", param) + " type is bool")
-			params[index] = param
-		default:
-			fmt.Println(fmt.Sprintf("%v", param) + " unsupport type")
-		}
+	return
+}
 
+func (builder QuerySqlBuilder) GetSql() (sqlStr string, params []interface{}, err error) {
+	sqlStr, params, err = builder.dynQuery.BuildSql(false)
+	if err != nil {
+		err = fmt.Errorf("makeSqlByCondition error: %v", err)
+		return
 	}
+	return
+}
 
+func (builder QuerySqlBuilder) GetPageSql(
+	pageIndex uint64, pageSize uint64,
+) (sqlStr string, params []interface{}, err error) {
+	sqlStr, params, err = builder.dynQuery.BuildPageSql(pageIndex, pageSize)
+	if err != nil {
+		err = fmt.Errorf("makeSqlByCondition error: %v", err)
+		return
+	}
 	return
 }
 

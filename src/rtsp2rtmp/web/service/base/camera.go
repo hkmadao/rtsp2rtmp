@@ -14,7 +14,7 @@ func CameraCreate(e entity.Camera) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Insert(&e)
 	if err != nil && err != orm.ErrLastInsertIdUnavailable {
-		logs.Error("camera insert error : %v", err)
+		logs.Error("insert error : %v", err)
 		return i, err
 	}
 	return i, nil
@@ -24,7 +24,7 @@ func CameraUpdateById(e entity.Camera) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Update(&e)
 	if err != nil {
-		logs.Error("camera update error : %v", err)
+		logs.Error("update error : %v", err)
 		return 0, err
 	}
 	return i, nil
@@ -34,94 +34,198 @@ func CameraDelete(e entity.Camera) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Delete(&e)
 	if err != nil {
-		logs.Error("camera delete error : %v", err)
+		logs.Error("delete error : %v", err)
 		return 0, err
 	}
 	return i, nil
 }
 
-func CameraSelectById(id string) (e entity.Camera, err error) {
+func CameraSelectById(id string) (model entity.Camera, err error) {
 	o := orm.NewOrm()
-	e = entity.Camera{Id: id}
+	model = entity.Camera{Id: id}
 
-	err = o.Read(&e)
+	err = o.Read(&model)
 
 	if err == orm.ErrNoRows {
-		logs.Error("查询不到")
-		return e, err
+		logs.Error("record not found")
+		return
 	} else if err == orm.ErrMissPK {
-		logs.Error("找不到主键")
-		return e, err
+		logs.Error("err miss pk")
+		return
 	} else if err != nil {
-		logs.Error("错误: %v", err)
-		return e, err
-	} else {
-		return e, nil
+		logs.Error("selectById error: %v", err)
+		return
 	}
+	return
 }
 
-func CameraSelectOne(q entity.Camera) (e entity.Camera, err error) {
-	o := orm.NewOrm()
-	err = o.QueryTable(new(entity.Camera)).Filter("code", q.Code).One(&e)
-	if err != nil {
-		logs.Error("查询出错：%v", err)
-		return e, err
+func CameraSelectByIds(ids []string) (models []entity.Camera, err error) {
+	logicNode := common.AqLogicNode{}
+	logicNode.LogicOperatorCode = common.LOGIC_OPERATOR_CODE_AND
+	filterNode := common.AqFilterNode{}
+	filterNode.OperatorCode = common.OPERATOR_CODE_IN
+	filterNode.Name = "id"
+	idsNew := make([]interface{}, 0)
+	for _, id := range ids {
+		idsNew = append(idsNew, id)
 	}
-	return e, nil
-}
-
-func CameraCountByCode(code string) (count int64, err error) {
-	o := orm.NewOrm()
-	count, err = o.QueryTable(new(entity.Camera)).Filter("code", code).Count()
-	if err != nil {
-		logs.Error("查询出错：%v", err)
-		return count, err
+	filterNode.FilterParams = idsNew
+	logicNode.FilterNodes = []common.AqFilterNode{filterNode}
+	condition := common.AqCondition{LogicNode: &logicNode}
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("selectByIds error: %v", err_build)
+		return
 	}
-	return count, nil
-}
-
-func CameraSelectAll() (es []entity.Camera, err error) {
+	var sqlStr, params, err_make_sql = querySqlBuilder.GetSql()
+	if err_make_sql != nil {
+		err = fmt.Errorf("selectByIds error: %v", err_make_sql)
+		return
+	}
 	o := orm.NewOrm()
-	// num, err := o.QueryTable(new(entity.Camera)).All(&es)
-
-	qb, _ := orm.NewQueryBuilder("postgres")
-
-	// Construct query object
-	qb.Select("*").
-		From("camera").
-		LeftJoin("camera_share").On("camera_share.camera_id = camera.id").
-		Where("camera.code like ?").
-		// OrderBy("camera.id").Desc().
-		Limit(1000).Offset(0)
-
-	// export raw query string from QueryBuilder object
-	sql := qb.String()
-
 	// execute the raw query string
-	o.Raw(sql, "%%").QueryRows(&es)
-
-	if err != nil {
-		logs.Error("查询出错：%v", err)
-		return es, err
+	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
+	if err_query != nil {
+		err = fmt.Errorf("selectByIds error: %v", err_make_sql)
+		return
 	}
-	logs.Debug("查询到%d条记录", 20)
-	return es, nil
+
+	return
 }
 
 func CameraFindCollectionByCondition(condition common.AqCondition) (models []entity.Camera, err error) {
-	var sqlStr, params, err_make_sql = dyn_query.MakeSqlByCondition(condition, "Camera")
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("findCollectionByCondition error: %v", err_build)
+		return
+	}
+	var sqlStr, params, err_make_sql = querySqlBuilder.GetSql()
 	if err_make_sql != nil {
-		err = fmt.Errorf("make sql error: %v", err_make_sql)
+		err = fmt.Errorf("findCollectionByCondition error: %v", err_make_sql)
 		return
 	}
 	o := orm.NewOrm()
 	// execute the raw query string
-	recordNum, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
-	o.Raw(sqlStr, params...).Exec()
+	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
 	if err_query != nil {
-		err = fmt.Errorf("query error: %v", err_make_sql)
+		err = fmt.Errorf("findCollectionByCondition error: %v", err_make_sql)
 		return
 	}
-	logs.Debug("查询到%d条记录", recordNum)
+	return
+}
+
+func CameraFindOneByCondition(condition common.AqCondition) (model entity.Camera, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("findOneByCondition error: %v", err_build)
+		return
+	}
+	var sqlStr, params, err_make_sql = querySqlBuilder.GetSql()
+	if err_make_sql != nil {
+		err = fmt.Errorf("findOneByCondition error: %v", err_make_sql)
+		return
+	}
+	o := orm.NewOrm()
+	// execute the raw query string
+	models := make([]entity.Camera, 0)
+	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
+	if err_query != nil {
+		err = fmt.Errorf("findOneByCondition error: %v", err_make_sql)
+		return
+	}
+	if len(models) < 1 {
+		err = fmt.Errorf("record not found")
+		return
+	}
+	if len(models) > 1 {
+		err = fmt.Errorf("record more than one")
+		return
+	}
+	model = models[0]
+	return
+}
+
+func CameraFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pageInfo common.PageInfo, err error) {
+	condition := common.AqCondition{LogicNode: aqPageInfoInput.LogicNode, Orders: aqPageInfoInput.Orders}
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("findPageByCondition error: %v", err_build)
+		return
+	}
+	var countSqlStr, params, err_make_sql = querySqlBuilder.GetCountSql()
+	if err_make_sql != nil {
+		err = fmt.Errorf("findPageByCondition error: %v", err_make_sql)
+		return
+	}
+	var pageSqlStr, _, err_make_page_sql = querySqlBuilder.GetPageSql(aqPageInfoInput.PageIndex, aqPageInfoInput.PageSize)
+	if err_make_page_sql != nil {
+		err = fmt.Errorf("findPageByCondition error: %v", err_make_page_sql)
+		return
+	}
+	o := orm.NewOrm()
+	// execute the count raw query string
+	var count uint64
+	err_count_query := o.Raw(countSqlStr, params...).QueryRow(&count)
+	if err_count_query != nil {
+		err = fmt.Errorf("findPageByCondition error: %v", err_count_query)
+		return
+	}
+	// execute the raw query string
+	models := make([]entity.Camera, 0)
+	_, err_query := o.Raw(pageSqlStr, params...).QueryRows(&models)
+	if err_query != nil {
+		err = fmt.Errorf("findPageByCondition error: %v", err_make_sql)
+		return
+	}
+	dataList := make([]interface{}, 0)
+	for _, model := range models {
+		dataList = append(dataList, model)
+	}
+	pageInfoInput := common.PageInfoInput{PageIndex: aqPageInfoInput.PageIndex, PageSize: aqPageInfoInput.PageSize, TotalCount: count}
+	pageInfo = common.PageInfo{PageInfoInput: pageInfoInput, DataList: dataList}
+	return
+}
+
+func CameraCountByCondition(condition common.AqCondition) (total uint64, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("countByCondition error: %v", err_build)
+		return
+	}
+	var countSqlStr, params, err_make_sql = querySqlBuilder.GetCountSql()
+	if err_make_sql != nil {
+		err = fmt.Errorf("countByCondition error: %v", err_make_sql)
+		return
+	}
+	o := orm.NewOrm()
+	// execute the count raw query string
+	err_count_query := o.Raw(countSqlStr, params...).QueryRow(&total)
+	if err_count_query != nil {
+		err = fmt.Errorf("countByCondition error: %v", err_count_query)
+		return
+	}
+	return
+}
+
+func CameraExistsByCondition(condition common.AqCondition) (exist bool, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, "Camera")
+	if err_build != nil {
+		err = fmt.Errorf("existsByCondition error: %v", err_build)
+		return
+	}
+	var countSqlStr, params, err_make_sql = querySqlBuilder.GetCountSql()
+	if err_make_sql != nil {
+		err = fmt.Errorf("existsByCondition error: %v", err_make_sql)
+		return
+	}
+	o := orm.NewOrm()
+	// execute the count raw query string
+	total := 0
+	err_count_query := o.Raw(countSqlStr, params...).QueryRow(&total)
+	if err_count_query != nil {
+		err = fmt.Errorf("existsByCondition error: %v", err_count_query)
+		return
+	}
+	exist = total > 0
 	return
 }

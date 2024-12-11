@@ -64,7 +64,10 @@ func (w *web) webRun() {
 
 	router.GET("/live/:method/:code/:authCode.flv", controllers.HttpFlvPlay)
 
+	router.GET("/camera/getById/:id", base_controller.CameraGetById)
+	router.GET("/camera/getByIds", base_controller.CameraGetByIds)
 	router.POST("/camera/aq", base_controller.CameraAq)
+	router.POST("/camera/aqPage", base_controller.CameraAqPage)
 	router.GET("/camera/list", controllers.CameraList)
 	router.GET("/camera/detail", controllers.CameraDetail)
 	router.POST("/camera/edit", controllers.CameraEdit)
@@ -101,59 +104,66 @@ func (w *web) webRun() {
 
 // 跨域
 func Cors() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		method := c.Request.Method               //请求方法
-		origin := c.Request.Header.Get("Origin") //请求头部
+	return func(ctx *gin.Context) {
+		//请求方法
+		method := ctx.Request.Method
+		//请求头部
+		origin := ctx.Request.Header.Get("Origin")
 		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			c.Header("Access-Control-Allow-Origin", "*")                                       // 这是允许访问所有域
-			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE,UPDATE") //服务器支持的所有跨域请求的方法,为了避免浏览次请求的多次'预检'请求
-			//  header的类型
-			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Length, X-CSRF-Token, Token,session,X_Requested_With,Accept, Origin, Host, Connection, Accept-Encoding, Accept-Language,DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Pragma")
-			//              允许跨域设置                                                                                                      可以返回其他子段
-			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers,Cache-Control,Content-Language,Content-Type,Expires,Last-Modified,Pragma,FooBar") // 跨域关键设置 让浏览器可以解析
-			c.Header("Access-Control-Max-Age", "172800")                                                                                                                                                           // 缓存请求信息 单位为秒
-			c.Header("Access-Control-Allow-Credentials", "false")                                                                                                                                                  //  跨域请求是否需要带cookie信息 默认设置为true
-			c.Set("content-type", "application/json")                                                                                                                                                              // 设置返回格式是json
+			ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			// 这是允许访问所有域
+			ctx.Header("Access-Control-Allow-Origin", "*")
+			//服务器支持的所有跨域请求的方法,为了避免浏览次请求的多次'预检'请求
+			ctx.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
+			// header的类型
+			ctx.Header("Access-Control-Allow-Headers", "Authorization, Content-Length, X-CSRF-Token, Token,session,X_Requested_With,Accept, Origin, Host, Connection, Accept-Encoding, Accept-Language,DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Pragma")
+			// 跨域关键设置 让浏览器可以解析
+			ctx.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers,Cache-Control,Content-Language,Content-Type,Expires,Last-Modified,Pragma,FooBar")
+			// 缓存请求信息 单位为秒
+			ctx.Header("Access-Control-Max-Age", "172800")
+			//  跨域请求是否需要带cookie信息 默认设置为true
+			ctx.Header("Access-Control-Allow-Credentials", "false")
+			// 设置返回格式是json
+			ctx.Set("content-type", "application/json")
 		}
 
 		//放行所有OPTIONS方法
 		if method == "OPTIONS" {
-			c.JSON(http.StatusOK, "Options Request!")
+			ctx.JSON(http.StatusOK, "Options Request!")
 		}
 		// 处理请求
-		c.Next() //  处理请求
+		ctx.Next()
 	}
 }
 
 // 验证token
 func Validate() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		security, err := config.Bool("server.security")
 		if err != nil {
 			logs.Error("get server security error: %v. \n use default true", err)
 			security = true
 		}
 		if !security {
-			c.Next()
+			ctx.Next()
 			return
 		}
-		if c.Request.URL.Path == "/system/login" || strings.HasPrefix(c.Request.URL.Path, "/live/") ||
-			strings.HasPrefix(c.Request.URL.Path, "/rtsp2rtmp") {
-			c.Next()
+		if ctx.Request.URL.Path == "/system/login" || strings.HasPrefix(ctx.Request.URL.Path, "/live/") ||
+			strings.HasPrefix(ctx.Request.URL.Path, "/rtsp2rtmp") {
+			ctx.Next()
 			return
 		}
 		r := common.Result{
 			Code: 1,
 			Msg:  "",
 		}
-		token := c.Request.Header.Get("token")
+		token := ctx.Request.Header.Get("token")
 		if len(token) == 0 {
 			logs.Error("token is null")
 			r.Code = 0
 			r.Msg = "token is null"
-			c.JSON(http.StatusUnauthorized, r)
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, r)
+			ctx.Abort()
 			return
 		}
 		tokenTime, b := tokens.Load(token)
@@ -161,8 +171,8 @@ func Validate() gin.HandlerFunc {
 			logs.Error("token error")
 			r.Code = 0
 			r.Msg = "token error"
-			c.JSON(http.StatusUnauthorized, r)
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, r)
+			ctx.Abort()
 			return
 		}
 		timeout := time.Now().After(tokenTime.(time.Time).Add(30 * time.Minute))
@@ -170,12 +180,12 @@ func Validate() gin.HandlerFunc {
 			logs.Error("token is timeout")
 			r.Code = 0
 			r.Msg = "token is timeout"
-			c.JSON(http.StatusUnauthorized, r)
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, r)
+			ctx.Abort()
 			return
 		}
 		tokens.Store(token, time.Now())
-		c.Next()
+		ctx.Next()
 	}
 }
 
