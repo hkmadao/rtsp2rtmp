@@ -82,21 +82,21 @@ func getDescAttr(
 
 func makeJoinSelect(
 	attrs []string,
-	refEntityName string,
-	refEntityAliasName string,
+	selfEntityName string,
+	selfEntityAliasName string,
 	index int,
 ) (joinExprs []JoinExpr, err error) {
 	if len(attrs) < 1 {
 		return
 	}
-	var parent_desc = register.GetDescMapByKey(refEntityName)
-	if parent_desc == nil {
-		err = fmt.Errorf("can not get description info: %s", refEntityName)
+	var self_desc = register.GetDescMapByKey(selfEntityName)
+	if self_desc == nil {
+		err = fmt.Errorf("can not get description info: %s", selfEntityName)
 		return
 	}
-	attr_info := parent_desc.AttributeInfoMap[attrs[index]]
+	attr_info := self_desc.AttributeInfoMap[attrs[index]]
 	if nil == attr_info {
-		err = fmt.Errorf("%s can not get attribute info: %s", refEntityName, attrs[index])
+		err = fmt.Errorf("%s can not get attribute info: %s", selfEntityName, attrs[index])
 		return
 	}
 	var ref_desc = register.GetDescMapByKey(attr_info.OutEntityName)
@@ -110,19 +110,20 @@ func makeJoinSelect(
 	var alias_name = strings.Join(attrs[:index+1], ".")
 	var aliasNameMd5 = Md5(alias_name)
 	joinExpr.AliasName = aliasNameMd5
-	if attr_info.DataType == common.DATA_TYPE_REF || attr_info.DataType == common.DATA_TYPE_SINGLE_REF || attr_info.DataType == common.DATA_TYPE_AGG_REF || attr_info.DataType == common.DATA_TYPE_AGG_SINGLE_REF {
-		fk_attr_info := ref_desc.AttributeInfoMap[attr_info.InnerAttributeName]
+	if attr_info.DataType == common.DATA_TYPE_REF ||
+		attr_info.DataType == common.DATA_TYPE_SINGLE_REF {
+		fk_attr_info := self_desc.AttributeInfoMap[attr_info.InnerAttributeName]
 		if nil == fk_attr_info {
-			err = fmt.Errorf("%s can not get out entity InnerAttributeName attribute info: %s", ref_desc.EntityInfo.ClassName, attr_info.InnerAttributeName)
+			err = fmt.Errorf("%s can not get fk attribute info: %s", self_desc.EntityInfo.ClassName, attr_info.InnerAttributeName)
 			return
 		}
 		var on = new(ConditionExpression)
 		on.ConditionType = AND
 		var simpleExprs = make([]SimpleExpr, 2)
-		simpleExprs[0].TableAliasName = refEntityAliasName
-		simpleExprs[0].ColumnName = parent_desc.PkAttributeInfo.ColumnName
+		simpleExprs[0].TableAliasName = selfEntityAliasName
+		simpleExprs[0].ColumnName = fk_attr_info.ColumnName
 		simpleExprs[1].TableAliasName = aliasNameMd5
-		simpleExprs[1].ColumnName = fk_attr_info.ColumnName
+		simpleExprs[1].ColumnName = ref_desc.PkAttributeInfo.ColumnName
 		on.SimpleExprs = simpleExprs
 		joinExpr.On = on
 	} else {
@@ -134,8 +135,8 @@ func makeJoinSelect(
 		var on = new(ConditionExpression)
 		on.ConditionType = AND
 		var simpleExprs = make([]SimpleExpr, 2)
-		simpleExprs[0].TableAliasName = refEntityAliasName
-		simpleExprs[0].ColumnName = parent_desc.PkAttributeInfo.ColumnName
+		simpleExprs[0].TableAliasName = selfEntityAliasName
+		simpleExprs[0].ColumnName = self_desc.PkAttributeInfo.ColumnName
 		simpleExprs[1].TableAliasName = aliasNameMd5
 		simpleExprs[1].ColumnName = out_entity_id_reversal_attr_info.ColumnName
 		on.SimpleExprs = simpleExprs
@@ -586,8 +587,8 @@ func NewQuerySqlBuilder(
 	}
 	var mainColumns = make([]ColumnRef, 0)
 	for _, value := range parent_desc.AttributeInfoMap {
-		if value.DataType == common.DATA_TYPE_AGG_REF ||
-			value.DataType == common.DATA_TYPE_AGG_SINGLE_REF ||
+		if value.DataType == common.DATA_TYPE_REF ||
+			value.DataType == common.DATA_TYPE_SINGLE_REF ||
 			value.DataType == common.DATA_TYPE_ARRAY ||
 			value.DataType == common.DATA_TYPE_SINGLE {
 			continue

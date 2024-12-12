@@ -63,11 +63,23 @@ func (w *web) webRun() {
 	router.POST("/system/login", login)
 
 	router.GET("/live/:method/:code/:authCode.flv", controllers.HttpFlvPlay)
-
+	// camera
+	router.POST("/camera/add", base_controller.CameraAdd)
+	router.POST("/camera/update", base_controller.CameraUpdate)
+	router.POST("/camera/remove", base_controller.CameraRemove)
 	router.GET("/camera/getById/:id", base_controller.CameraGetById)
 	router.GET("/camera/getByIds", base_controller.CameraGetByIds)
 	router.POST("/camera/aq", base_controller.CameraAq)
 	router.POST("/camera/aqPage", base_controller.CameraAqPage)
+	// camerashare
+	router.POST("/cameraShare/add", base_controller.CameraShareAdd)
+	router.POST("/cameraShare/update", base_controller.CameraShareUpdate)
+	router.POST("/cameraShare/remove", base_controller.CameraShareRemove)
+	router.GET("/cameraShare/getById/:id", base_controller.CameraShareGetById)
+	router.GET("/cameraShare/getByIds", base_controller.CameraShareGetByIds)
+	router.POST("/cameraShare/aq", base_controller.CameraShareAq)
+	router.POST("/cameraShare/aqPage", base_controller.CameraShareAqPage)
+
 	router.GET("/camera/list", controllers.CameraList)
 	router.GET("/camera/detail", controllers.CameraDetail)
 	router.POST("/camera/edit", controllers.CameraEdit)

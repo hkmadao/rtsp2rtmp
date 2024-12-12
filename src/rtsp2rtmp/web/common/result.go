@@ -47,13 +47,13 @@ func ErrorResult(msg string) AppResult {
 }
 
 func SuccessResultData(data interface{}) AppResult {
-	return AppResult{Status: 1, Data: data}
+	return AppResult{Status: 0, Data: data}
 }
 
 func SuccessResultMsg(msg string) AppResult {
-	return AppResult{Status: 1, Message: msg}
+	return AppResult{Status: 0, Message: msg}
 }
 
 func SuccessResultWithMsg(msg string, data interface{}) AppResult {
-	return AppResult{Status: 1, Message: msg, Data: data}
+	return AppResult{Status: 0, Message: msg, Data: data}
 }

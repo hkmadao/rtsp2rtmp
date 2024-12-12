@@ -11,13 +11,13 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	dto_convert "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/convert"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	camera_po "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/po/base/camera"
+	camera_share_po "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/po/base/camera_share"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func CameraAdd(ctx *gin.Context) {
+func CameraShareAdd(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	po := camera_po.CameraPO{}
+	po := camera_share_po.CameraSharePO{}
 	err := ctx.BindJSON(&po)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -25,7 +25,7 @@ func CameraAdd(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	camera, err := dto_convert.ConvertPOToCamera(po)
+	cameraShare, err := dto_convert.ConvertPOToCameraShare(po)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -34,8 +34,8 @@ func CameraAdd(ctx *gin.Context) {
 	}
 
 	id, _ := utils.UUID()
-	camera.Id = id
-	_, err = base_service.CameraCreate(camera)
+	cameraShare.Id = id
+	_, err = base_service.CameraShareCreate(cameraShare)
 	if err != nil {
 		logs.Error("insert error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -43,7 +43,7 @@ func CameraAdd(ctx *gin.Context) {
 		return
 	}
 
-	cameraAfterSave, err := base_service.CameraSelectById(id)
+	cameraAfterSave, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -51,7 +51,7 @@ func CameraAdd(ctx *gin.Context) {
 		return
 	}
 
-	vo, err := dto_convert.ConvertCameraToVO(cameraAfterSave)
+	vo, err := dto_convert.ConvertCameraShareToVO(cameraAfterSave)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -62,9 +62,9 @@ func CameraAdd(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraUpdate(ctx *gin.Context) {
+func CameraShareUpdate(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	po := camera_po.CameraPO{}
+	po := camera_share_po.CameraSharePO{}
 	err := ctx.BindJSON(&po)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -72,7 +72,7 @@ func CameraUpdate(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	camera, err := dto_convert.ConvertPOToCamera(po)
+	cameraShare, err := dto_convert.ConvertPOToCameraShare(po)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -80,9 +80,9 @@ func CameraUpdate(ctx *gin.Context) {
 		return
 	}
 
-	var id = camera.Id
+	var id = cameraShare.Id
 
-	_, err = base_service.CameraSelectById(id)
+	_, err = base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -90,7 +90,7 @@ func CameraUpdate(ctx *gin.Context) {
 		return
 	}
 
-	_, err = base_service.CameraUpdateById(camera)
+	_, err = base_service.CameraShareUpdateById(cameraShare)
 	if err != nil {
 		logs.Error("insert error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -98,7 +98,7 @@ func CameraUpdate(ctx *gin.Context) {
 		return
 	}
 
-	cameraAfterSave, err := base_service.CameraSelectById(id)
+	cameraAfterSave, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -106,7 +106,7 @@ func CameraUpdate(ctx *gin.Context) {
 		return
 	}
 
-	vo, err := dto_convert.ConvertCameraToVO(cameraAfterSave)
+	vo, err := dto_convert.ConvertCameraShareToVO(cameraAfterSave)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -117,9 +117,9 @@ func CameraUpdate(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraRemove(ctx *gin.Context) {
+func CameraShareRemove(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	po := camera_po.CameraPO{}
+	po := camera_share_po.CameraSharePO{}
 	err := ctx.BindJSON(&po)
 	if err != nil {
 		logs.Error("param error : %v", err)
@@ -130,7 +130,7 @@ func CameraRemove(ctx *gin.Context) {
 
 	var id = po.Id
 
-	cameraGetById, err := base_service.CameraSelectById(id)
+	cameraGetById, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -138,7 +138,7 @@ func CameraRemove(ctx *gin.Context) {
 		return
 	}
 
-	_, err = base_service.CameraDelete(cameraGetById)
+	_, err = base_service.CameraShareDelete(cameraGetById)
 	if err != nil {
 		logs.Error("delete error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -149,7 +149,7 @@ func CameraRemove(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraGetById(ctx *gin.Context) {
+func CameraShareGetById(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	id, ok := ctx.Params.Get("id")
 	if !ok {
@@ -158,14 +158,14 @@ func CameraGetById(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	camera, err := base_service.CameraSelectById(id)
+	cameraShare, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	vo, err := dto_convert.ConvertCameraToVO(camera)
+	vo, err := dto_convert.ConvertCameraShareToVO(cameraShare)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -176,7 +176,7 @@ func CameraGetById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraGetByIds(ctx *gin.Context) {
+func CameraShareGetByIds(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	idsStr := ctx.Query("ids")
 	idList := strings.Split(idsStr, ",")
@@ -186,7 +186,7 @@ func CameraGetByIds(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	cameras, err := base_service.CameraSelectByIds(idList)
+	cameras, err := base_service.CameraShareSelectByIds(idList)
 	if err != nil {
 		logs.Error("getByIds error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -194,7 +194,7 @@ func CameraGetByIds(ctx *gin.Context) {
 		return
 	}
 
-	voList, err := dto_convert.ConvertCameraToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
 	if err != nil {
 		logs.Error("getByIds error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -205,7 +205,7 @@ func CameraGetByIds(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraAq(ctx *gin.Context) {
+func CameraShareAq(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	condition := common.AqCondition{}
 	err := ctx.BindJSON(&condition)
@@ -215,14 +215,14 @@ func CameraAq(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	cameras, err := base_service.CameraFindCollectionByCondition(condition)
+	cameras, err := base_service.CameraShareFindCollectionByCondition(condition)
 	if err != nil {
 		logs.Error("aq error : %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	voList, err := dto_convert.ConvertCameraToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
 	if err != nil {
 		logs.Error("aq error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -233,7 +233,7 @@ func CameraAq(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func CameraAqPage(ctx *gin.Context) {
+func CameraShareAqPage(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	pageInfoInput := common.AqPageInfoInput{}
 	err := ctx.BindJSON(&pageInfoInput)
@@ -244,18 +244,18 @@ func CameraAqPage(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	pageInfo, err := base_service.CameraFindPageByCondition(pageInfoInput)
+	pageInfo, err := base_service.CameraShareFindPageByCondition(pageInfoInput)
 	if err != nil {
 		logs.Error("aqPage error : %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	var cameras = make([]entity.Camera, 0)
+	var cameras = make([]entity.CameraShare, 0)
 	for _, data := range pageInfo.DataList {
-		cameras = append(cameras, data.(entity.Camera))
+		cameras = append(cameras, data.(entity.CameraShare))
 	}
-	voList, err := dto_convert.ConvertCameraToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
 	if err != nil {
 		logs.Error("aqPage error: %v", err)
 		result := common.ErrorResult("internal error")
