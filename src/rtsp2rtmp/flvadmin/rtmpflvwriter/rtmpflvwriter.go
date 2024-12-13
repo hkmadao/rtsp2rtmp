@@ -8,8 +8,8 @@ import (
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtmp"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 type IRtmpFlvManager interface {
@@ -75,9 +75,8 @@ func (rfw *RtmpFlvWriter) StopWrite() {
 }
 
 func (rfw *RtmpFlvWriter) createConn() error {
-	var camera entity.Camera
-	camera.Code = rfw.code
-	camera, err := service.CameraSelectOne(camera)
+	condition := common.GetEqualCondition("code", rfw.code)
+	camera, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("not found camera : %s", rfw.code)
 		return err
@@ -100,9 +99,8 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		}
 	}()
 
-	var camera entity.Camera
-	camera.Code = rfw.code
-	camera, err := service.CameraSelectOne(camera)
+	condition := common.GetEqualCondition("code", rfw.code)
+	camera, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("not found camera : %s", rfw.code)
 		return

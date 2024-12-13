@@ -10,8 +10,8 @@ import (
 	"github.com/deepch/vdk/av"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/httpflvmanage/httpflvwriter"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 type HttpFlvManager struct {
@@ -55,7 +55,8 @@ func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		code:      code,
 		codecs:    codecs,
 	}
-	camera, err := service.CameraSelectOne(entity.Camera{Code: code})
+	condition := common.GetEqualCondition("code", code)
+	camera, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		return hfm

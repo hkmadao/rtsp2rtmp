@@ -1,16 +1,5 @@
 package common
 
-type Page struct {
-	Total int         `json:"total"`
-	Page  interface{} `json:"page"`
-}
-
-type Result struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
-}
-
 type AppResult struct {
 	Status  uint32      `json:"status"`
 	Message string      `json:"message"`

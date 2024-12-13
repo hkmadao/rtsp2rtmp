@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
 	base_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/base"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
 )
 
 var tokens sync.Map
@@ -52,8 +52,8 @@ func (w *web) StartWeb() {
 
 func (w *web) webRun() {
 	defer func() {
-		if r := recover(); r != nil {
-			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
+		if result := recover(); result != nil {
+			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))
 		}
 	}()
 	router := gin.Default()
@@ -62,7 +62,7 @@ func (w *web) webRun() {
 
 	router.POST("/system/login", login)
 
-	router.GET("/live/:method/:code/:authCode.flv", controllers.HttpFlvPlay)
+	router.GET("/live/:method/:code/:authCode.flv", ext_controller.HttpFlvPlay)
 	// camera
 	router.POST("/camera/add", base_controller.CameraAdd)
 	router.POST("/camera/update", base_controller.CameraUpdate)
@@ -80,20 +80,20 @@ func (w *web) webRun() {
 	router.POST("/cameraShare/aq", base_controller.CameraShareAq)
 	router.POST("/cameraShare/aqPage", base_controller.CameraShareAqPage)
 
-	router.GET("/camera/list", controllers.CameraList)
-	router.GET("/camera/detail", controllers.CameraDetail)
-	router.POST("/camera/edit", controllers.CameraEdit)
-	router.POST("/camera/delete/:id", controllers.CameraDelete)
-	router.POST("/camera/enabled", controllers.CameraEnabled)
-	router.POST("/camera/rtmppushchange", controllers.RtmpPushChange)
-	router.POST("/camera/savevideochange", controllers.CameraSaveVideoChange)
-	router.POST("/camera/livechange", controllers.CameraLiveChange)
-	router.POST("/camera/playauthcodereset", controllers.CameraPlayAuthCodeReset)
+	// router.GET("/camera/list", ext_controller.CameraList)
+	// router.GET("/camera/detail", ext_controller.CameraDetail)
+	// router.POST("/camera/edit", ext_controller.CameraEdit)
+	// router.POST("/camera/delete/:id", ext_controller.CameraDelete)
+	router.POST("/camera/enabled", ext_controller.CameraEnabled)
+	router.POST("/camera/rtmpPushChange", ext_controller.RtmpPushChange)
+	router.POST("/camera/saveVideoChange", ext_controller.CameraSaveVideoChange)
+	router.POST("/camera/liveChange", ext_controller.CameraLiveChange)
+	router.POST("/camera/playAuthCodeReset", ext_controller.CameraPlayAuthCodeReset)
 
-	router.GET("/camerashare/list", controllers.CameraShareList)
-	router.POST("/camerashare/edit", controllers.CameraShareEdit)
-	router.POST("/camerashare/delete/:id", controllers.CameraShareDelete)
-	router.POST("/camerashare/enabled", controllers.CameraShareEnabled)
+	// router.GET("/camerashare/list", ext_controller.CameraShareList)
+	// router.POST("/camerashare/edit", ext_controller.CameraShareEdit)
+	// router.POST("/camerashare/delete/:id", ext_controller.CameraShareDelete)
+	router.POST("/cameraShare/enabled", ext_controller.CameraShareEnabled)
 
 	staticPath, err := config.String("server.http.static.path")
 	if err != nil {
@@ -165,34 +165,27 @@ func Validate() gin.HandlerFunc {
 			ctx.Next()
 			return
 		}
-		r := common.Result{
-			Code: 1,
-			Msg:  "",
-		}
 		token := ctx.Request.Header.Get("token")
 		if len(token) == 0 {
-			logs.Error("token is null")
-			r.Code = 0
-			r.Msg = "token is null"
-			ctx.JSON(http.StatusUnauthorized, r)
+			logs.Error("token is empty")
+			result := common.ErrorResult("token is empty")
+			ctx.JSON(http.StatusUnauthorized, result)
 			ctx.Abort()
 			return
 		}
 		tokenTime, b := tokens.Load(token)
 		if !b {
 			logs.Error("token error")
-			r.Code = 0
-			r.Msg = "token error"
-			ctx.JSON(http.StatusUnauthorized, r)
+			result := common.ErrorResult("token error")
+			ctx.JSON(http.StatusUnauthorized, result)
 			ctx.Abort()
 			return
 		}
 		timeout := time.Now().After(tokenTime.(time.Time).Add(30 * time.Minute))
 		if timeout {
 			logs.Error("token is timeout")
-			r.Code = 0
-			r.Msg = "token is timeout"
-			ctx.JSON(http.StatusUnauthorized, r)
+			result := common.ErrorResult("token is timeout")
+			ctx.JSON(http.StatusUnauthorized, result)
 			ctx.Abort()
 			return
 		}
@@ -201,18 +194,13 @@ func Validate() gin.HandlerFunc {
 	}
 }
 
-func login(c *gin.Context) {
-	r := common.Result{
-		Code: 1,
-		Msg:  "",
-	}
+func login(ctx *gin.Context) {
 	params := make(map[string]interface{})
-	err := c.BindJSON(&params)
+	err := ctx.BindJSON(&params)
 	if err != nil {
 		logs.Error("param error : %v", err)
-		r.Code = 0
-		r.Msg = "param error"
-		c.JSON(http.StatusOK, r)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
 		return
 	}
 	userNameParam := params["userName"].(string)
@@ -221,21 +209,20 @@ func login(c *gin.Context) {
 	password := config.DefaultString("server.user.password", "")
 	if userNameParam == "" || passwordParam == "" || userNameParam != userName || passwordParam != password {
 		logs.Error("userName : %s , password : %s error", userNameParam, passwordParam)
-		r.Code = 0
-		r.Msg = "userName or password error ! "
-		c.JSON(http.StatusOK, r)
+		result := common.ErrorResult("userName or password error")
+		ctx.JSON(http.StatusOK, result)
 		return
 	}
 	logs.Info("用户[%s]登录成功！", userName)
 	token, err := utils.NextToke()
 	if err != nil {
 		logs.Error("create token fail")
-		r.Code = 0
-		r.Msg = "create token fail"
-		c.JSON(http.StatusOK, r)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	r.Data = map[string]string{"token": token}
+
+	result := common.SuccessResultWithMsg("succss", map[string]string{"token": token})
 	tokens.Store(token, time.Now())
-	c.JSON(http.StatusOK, r)
+	ctx.JSON(http.StatusOK, result)
 }

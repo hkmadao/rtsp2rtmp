@@ -10,9 +10,9 @@ import (
 	"github.com/deepch/vdk/format/rtspv2"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclient"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 var rcmInstance *RtspClientManager
@@ -32,7 +32,7 @@ func GetSingleRtspClientManager() *RtspClientManager {
 
 func (rs *RtspClientManager) StartClient() {
 	go rs.startConnections()
-	go rs.stopConn(controllers.CodeStream())
+	go rs.stopConn(ext_controller.CodeStream())
 }
 
 func (rc *RtspClientManager) ExistsPublisher(code string) bool {
@@ -76,7 +76,8 @@ func (s *RtspClientManager) startConnections() {
 			logs.Error("rtspManager panic %v", r)
 		}
 	}()
-	es, err := service.CameraSelectAll()
+	condition := common.GetEmptyCondition()
+	es, err := base_service.CameraFindCollectionByCondition(condition)
 	if err != nil {
 		logs.Error("camera list query error: %s", err)
 		return
@@ -85,7 +86,8 @@ func (s *RtspClientManager) startConnections() {
 	for {
 		timeNow := time.Now()
 		if timeNow.After(timeTemp.Add(30 * time.Second)) {
-			es, err = service.CameraSelectAll()
+			condition := common.GetEmptyCondition()
+			es, err = base_service.CameraFindCollectionByCondition(condition)
 			if err != nil {
 				logs.Error("camera list query error: %s", err)
 				return
@@ -118,8 +120,8 @@ func (s *RtspClientManager) connRtsp(code string) {
 	}()
 	//放置信息表示已经开始
 	s.rcs.Store(code, struct{}{})
-	q := entity.Camera{Code: code}
-	c, err := service.CameraSelectOne(q)
+	condition := common.GetEqualCondition("code", code)
+	c, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
@@ -141,7 +143,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
 		c.OnlineStatus = 0
 		if c.OnlineStatus == 1 {
-			service.CameraUpdate(c)
+			base_service.CameraUpdateById(c)
 		}
 		return
 	}
@@ -149,7 +151,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 	// logs.Warn("camera: %s codecs: %v", code, session.CodecData)
 
 	c.OnlineStatus = 1
-	service.CameraUpdate(c)
+	base_service.CameraUpdateById(c)
 
 	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
@@ -207,12 +209,12 @@ Loop:
 	}
 
 	//offline camera
-	camera, err := service.CameraSelectOne(q)
+	camera, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("no camera error : %s", code)
 	} else {
 		camera.OnlineStatus = 0
-		service.CameraUpdate(camera)
+		base_service.CameraUpdateById(camera)
 	}
 
 	logs.Error("camera: %s session Close", code)

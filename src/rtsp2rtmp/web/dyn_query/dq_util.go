@@ -47,7 +47,7 @@ func getJoinNamesFromOrders(
 	orders []common.AqOrder,
 ) map[string]uint32 {
 	for _, order := range orders {
-		var names []string = strings.Split(order.Property, ",")
+		var names []string = strings.Split(order.Property, ".")
 		if len(names) > 1 {
 			names = names[:len(names)-1]
 			result_map[strings.Join(names, ".")] = 1
@@ -629,8 +629,8 @@ func NewQuerySqlBuilder(
 			err = fmt.Errorf("makeSqlByCondition error: %v", err)
 			return
 		}
+		selectStatemet.SqlWhere = &conditionExpr
 	}
-	selectStatemet.SqlWhere = &conditionExpr
 
 	var orderExprs = make([]OrderExpr, 0)
 	orderExprs, err = makeColumnOrderBy(orders, main_entity_name, main_table_alias)
@@ -649,35 +649,6 @@ func NewQuerySqlBuilder(
 	builder = new(QuerySqlBuilder)
 	builder.dynQuery = dynQuery
 
-	return
-}
-
-func (builder QuerySqlBuilder) GetCountSql() (sqlStr string, params []interface{}, err error) {
-	sqlStr, params, err = builder.dynQuery.BuildCountSql()
-	if err != nil {
-		err = fmt.Errorf("makeSqlByCondition error: %v", err)
-		return
-	}
-	return
-}
-
-func (builder QuerySqlBuilder) GetSql() (sqlStr string, params []interface{}, err error) {
-	sqlStr, params, err = builder.dynQuery.BuildSql(false)
-	if err != nil {
-		err = fmt.Errorf("makeSqlByCondition error: %v", err)
-		return
-	}
-	return
-}
-
-func (builder QuerySqlBuilder) GetPageSql(
-	pageIndex uint64, pageSize uint64,
-) (sqlStr string, params []interface{}, err error) {
-	sqlStr, params, err = builder.dynQuery.BuildPageSql(pageIndex, pageSize)
-	if err != nil {
-		err = fmt.Errorf("makeSqlByCondition error: %v", err)
-		return
-	}
 	return
 }
 

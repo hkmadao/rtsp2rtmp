@@ -7,7 +7,8 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 var taskInstance *task
@@ -47,7 +48,8 @@ func (t *task) offlineCamera() {
 		}
 	}()
 	for {
-		css, err := service.CameraSelectAll()
+		condition := common.GetEmptyCondition()
+		css, err := base_service.CameraFindCollectionByCondition(condition)
 		if err != nil {
 			logs.Error("query camera error : %v", err)
 		}
@@ -57,7 +59,7 @@ func (t *task) offlineCamera() {
 			}
 			if exists := rtspclientmanager.GetSingleRtspClientManager().ExistsPublisher(cs.Code); !exists {
 				cs.OnlineStatus = 0
-				service.CameraUpdate(cs)
+				base_service.CameraUpdateById(cs)
 			}
 		}
 		<-time.After(10 * time.Minute)
