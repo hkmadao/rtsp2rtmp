@@ -1,8 +1,10 @@
 server:
-    security: true
+    security: false
     user:
         name: admin
         password: admin
+    rtmp:
+        port: 1936
     http:
         port: 8080
         static:
@@ -16,5 +18,5 @@ server:
         driver-type: 4
         driver: postgres
         url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC
-        show-sql: false
+        show-sql: true
         

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -57,7 +57,7 @@ func (t *task) offlineCamera() {
 			if cs.OnlineStatus != 1 {
 				continue
 			}
-			if exists := rtspclientmanager.GetSingleRtspClientManager().ExistsPublisher(cs.Code); !exists {
+			if exists := rtmpserver.GetSingleRtmpServer().ExistsPublisher(cs.Code); !exists {
 				cs.OnlineStatus = 0
 				base_service.CameraUpdateById(cs)
 			}

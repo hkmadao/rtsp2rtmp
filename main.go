@@ -6,7 +6,10 @@ import (
 	"syscall"
 
 	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/conf" // 必须先导入配置文件
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/ffmpegmanager"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
+
+	// "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/register"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/task"
@@ -18,8 +21,9 @@ import (
 )
 
 func main() {
-
-	rtspclientmanager.GetSingleRtspClientManager().StartClient()
+	// rtspclientmanager.GetSingleRtspClientManager().StartClient()
+	rtmpserver.GetSingleRtmpServer().StartRtmpServer()
+	ffmpegmanager.GetSingleFFmpegManager().StartClient()
 	task.GetSingleTask().StartTask()
 	web.GetSingleWeb().StartWeb()
 	sigs := make(chan os.Signal, 1)
