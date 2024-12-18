@@ -46,7 +46,7 @@ func CameraDelete(e entity.Camera) (i int64, err error) {
 
 func CameraSelectById(id string) (model entity.Camera, err error) {
 	o := orm.NewOrm()
-	model = entity.Camera{Id: id}
+	model = entity.Camera{ Id: id  }
 
 	err = o.Read(&model)
 

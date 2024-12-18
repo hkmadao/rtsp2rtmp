@@ -14,7 +14,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/ffmpegmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmppublisher"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
-	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
@@ -170,7 +170,7 @@ func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {
 	}
 	r.conns.Store(camera.Code, conn)
 
-	camera.OnlineStatus = 1
+	camera.OnlineStatus = true
 	base_service.CameraUpdateById(camera)
 
 	done := make(chan int)
@@ -228,7 +228,7 @@ func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {
 	if err != nil {
 		logs.Error("no camera error : %s", code)
 	} else {
-		camera.OnlineStatus = 0
+		camera.OnlineStatus = false
 		base_service.CameraUpdateById(camera)
 	}
 
@@ -265,7 +265,7 @@ func authentication(camera entity.Camera, code string, authCode string, conn *rt
 		conn.Close()
 		return false
 	}
-	if camera.Enabled != 1 {
+	if camera.Enabled != true {
 		logs.Error("camera %s disabled : %s", code, authCode)
 		err := conn.Close()
 		if err != nil {

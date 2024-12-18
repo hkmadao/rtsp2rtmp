@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
-	base_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/base"
-	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	base_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/base"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 )
 
 var tokens sync.Map
@@ -63,6 +63,22 @@ func (w *web) webRun() {
 	router.POST("/system/login", login)
 
 	router.GET("/live/:method/:code/:authCode.flv", ext_controller.HttpFlvPlay)
+	// user
+	router.POST("/user/add", base_controller.UserAdd)
+	router.POST("/user/update", base_controller.UserUpdate)
+	router.POST("/user/remove", base_controller.UserRemove)
+	router.GET("/user/getById/:id", base_controller.UserGetById)
+	router.GET("/user/getByIds", base_controller.UserGetByIds)
+	router.POST("/user/aq", base_controller.UserAq)
+	router.POST("/user/aqPage", base_controller.UserAqPage)
+	// toke
+	router.POST("/token/add", base_controller.TokenAdd)
+	router.POST("/token/update", base_controller.TokenUpdate)
+	router.POST("/token/remove", base_controller.TokenRemove)
+	router.GET("/token/getById/:id", base_controller.TokenGetById)
+	router.GET("/token/getByIds", base_controller.TokenGetByIds)
+	router.POST("/token/aq", base_controller.TokenAq)
+	router.POST("/token/aqPage", base_controller.TokenAqPage)
 	// camera
 	router.POST("/camera/add", base_controller.CameraAdd)
 	router.POST("/camera/update", base_controller.CameraUpdate)

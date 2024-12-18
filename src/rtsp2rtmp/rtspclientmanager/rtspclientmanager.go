@@ -12,7 +12,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 
-	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
@@ -99,7 +99,7 @@ func (s *RtspClientManager) startConnections() {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
 				continue
 			}
-			if camera.Enabled != 1 {
+			if camera.Enabled != true {
 				continue
 			}
 			go s.connRtsp(camera.Code)
@@ -127,7 +127,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
 	}
-	if c.Enabled != 1 {
+	if c.Enabled != true {
 		logs.Error("camera [%s] disabled : %v", code)
 		return
 	}
@@ -142,8 +142,8 @@ func (s *RtspClientManager) connRtsp(code string) {
 	session, err := rtspv2.Dial(rtspClientOptions)
 	if err != nil {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
-		c.OnlineStatus = 0
-		if c.OnlineStatus == 1 {
+		c.OnlineStatus = false
+		if c.OnlineStatus == true {
 			base_service.CameraUpdateById(c)
 		}
 		return
@@ -151,7 +151,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 	codecs := session.CodecData
 	// logs.Warn("camera: %s codecs: %v", code, session.CodecData)
 
-	c.OnlineStatus = 1
+	c.OnlineStatus = true
 	base_service.CameraUpdateById(c)
 
 	done := make(chan int)
@@ -214,7 +214,7 @@ Loop:
 	if err != nil {
 		logs.Error("no camera error : %s", code)
 	} else {
-		camera.OnlineStatus = 0
+		camera.OnlineStatus = false
 		base_service.CameraUpdateById(camera)
 	}
 

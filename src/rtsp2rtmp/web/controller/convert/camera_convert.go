@@ -8,7 +8,6 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	camera_po "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/po/base/camera"
 	camera_vo "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/vo/base/camera"
-	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 func ConvertPOToCamera(po camera_po.CameraPO) (camera entity.Camera, err error) {
@@ -29,26 +28,27 @@ func ConvertCameraToVO(camera entity.Camera) (vo camera_vo.CameraVO, err error) 
 		err = fmt.Errorf("convertCameraToVO : %v", err)
 		return
 	}
-	condition := common.GetEqualCondition("cameraId", vo.Id)
-	var cameraShareVOList = make([]camera_vo.CameraShareVO, 0)
-	var cameraShares = make([]entity.CameraShare, 0)
-	cameraShares, err = base_service.CameraShareFindCollectionByCondition(condition)
-	if err != nil {
-		logs.Error("convertCameraToVO : %v", err)
-		err = fmt.Errorf("convertCameraToVO : %v", err)
-		return
-	}
-	for _, cameraShare := range cameraShares {
-		var cameraShareVO = camera_vo.CameraShareVO{}
-		err = common.EntityToVO(cameraShare, &cameraShareVO)
-		if err != nil {
-			logs.Error("convertCameraToVO : %v", err)
-			err = fmt.Errorf("convertCameraToVO : %v", err)
-			return
-		}
-		cameraShareVOList = append(cameraShareVOList, cameraShareVO)
-	}
-	vo.CameraShares = cameraShareVOList
+	// condition := common.GetEqualCondition("cameraId", vo.Id)
+	// var cameraShareVOList = make([]camera_vo.CameraShareVO, 0)
+	// var cameraShares = make([]entity.CameraShare, 0)
+	// cameraShares, err = base_service.CameraShareFindCollectionByCondition(condition)
+	// if err != nil {
+	// 	logs.Error("convertCameraToVO : %v", err)
+	// 	err = fmt.Errorf("convertCameraToVO : %v", err)
+	// 	return
+	// }
+	// for _, cameraShare := range cameraShares {
+	// 	var cameraShareVO = camera_vo.CameraShareVO{}
+	// 	err = common.EntityToVO(cameraShare, &cameraShareVO)
+	// 	if err != nil {
+	// 		logs.Error("convertCameraToVO : %v", err)
+	// 		err = fmt.Errorf("convertCameraToVO : %v", err)
+	// 		return
+	// 	}
+	// 	cameraShareVOList = append(cameraShareVOList, cameraShareVO)
+	// }
+	// vo.CameraShares = cameraShareVOList
+
 	return
 }
 

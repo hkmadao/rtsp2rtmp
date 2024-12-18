@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
-	dto_convert "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/convert"
+	dto_convert "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/convert"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	camera_share_po "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/po/base/camera_share"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -43,7 +43,7 @@ func CameraShareAdd(ctx *gin.Context) {
 		return
 	}
 
-	cameraAfterSave, err := base_service.CameraShareSelectById(id)
+	cameraShareAfterSave, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -51,7 +51,7 @@ func CameraShareAdd(ctx *gin.Context) {
 		return
 	}
 
-	vo, err := dto_convert.ConvertCameraShareToVO(cameraAfterSave)
+	vo, err := dto_convert.ConvertCameraShareToVO(cameraShareAfterSave)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -98,7 +98,7 @@ func CameraShareUpdate(ctx *gin.Context) {
 		return
 	}
 
-	cameraAfterSave, err := base_service.CameraShareSelectById(id)
+	cameraShareAfterSave, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -106,7 +106,7 @@ func CameraShareUpdate(ctx *gin.Context) {
 		return
 	}
 
-	vo, err := dto_convert.ConvertCameraShareToVO(cameraAfterSave)
+	vo, err := dto_convert.ConvertCameraShareToVO(cameraShareAfterSave)
 	if err != nil {
 		logs.Error("getById error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -130,7 +130,7 @@ func CameraShareRemove(ctx *gin.Context) {
 
 	var id = po.Id
 
-	cameraGetById, err := base_service.CameraShareSelectById(id)
+	cameraShareGetById, err := base_service.CameraShareSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -138,14 +138,14 @@ func CameraShareRemove(ctx *gin.Context) {
 		return
 	}
 
-	_, err = base_service.CameraShareDelete(cameraGetById)
+	_, err = base_service.CameraShareDelete(cameraShareGetById)
 	if err != nil {
 		logs.Error("delete error: %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	result := common.SuccessResultData(cameraGetById)
+	result := common.SuccessResultData(cameraShareGetById)
 	ctx.JSON(http.StatusOK, result)
 }
 
@@ -186,7 +186,7 @@ func CameraShareGetByIds(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	cameras, err := base_service.CameraShareSelectByIds(idList)
+	cameraShares, err := base_service.CameraShareSelectByIds(idList)
 	if err != nil {
 		logs.Error("getByIds error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -194,7 +194,7 @@ func CameraShareGetByIds(ctx *gin.Context) {
 		return
 	}
 
-	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameraShares)
 	if err != nil {
 		logs.Error("getByIds error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -215,14 +215,14 @@ func CameraShareAq(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	cameras, err := base_service.CameraShareFindCollectionByCondition(condition)
+	cameraShares, err := base_service.CameraShareFindCollectionByCondition(condition)
 	if err != nil {
 		logs.Error("aq error : %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameraShares)
 	if err != nil {
 		logs.Error("aq error: %v", err)
 		result := common.ErrorResult("internal error")
@@ -251,11 +251,11 @@ func CameraShareAqPage(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	var cameras = make([]entity.CameraShare, 0)
+	var cameraShares = make([]entity.CameraShare, 0)
 	for _, data := range pageInfo.DataList {
-		cameras = append(cameras, data.(entity.CameraShare))
+		cameraShares = append(cameraShares, data.(entity.CameraShare))
 	}
-	voList, err := dto_convert.ConvertCameraShareToVOList(cameras)
+	voList, err := dto_convert.ConvertCameraShareToVOList(cameraShares)
 	if err != nil {
 		logs.Error("aqPage error: %v", err)
 		result := common.ErrorResult("internal error")

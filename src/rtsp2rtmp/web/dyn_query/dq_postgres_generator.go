@@ -205,9 +205,9 @@ func (dynQuery *DynQueryPostgres) makeConditionsToken(conditionExpr ConditionExp
 				simpleExprTokens = append(simpleExprTokens, "=", "?")
 				vBool, ok := simpleExpr.Values[0].(bool)
 				if ok {
-					param := 0
+					param := false
 					if vBool {
-						param = 1
+						param = true
 					}
 					params = append(params, param)
 				} else {
@@ -217,9 +217,9 @@ func (dynQuery *DynQueryPostgres) makeConditionsToken(conditionExpr ConditionExp
 				simpleExprTokens = append(simpleExprTokens, "!=", "?")
 				vBool, ok := simpleExpr.Values[0].(bool)
 				if ok {
-					param := 0
+					param := false
 					if vBool {
-						param = 1
+						param = true
 					}
 					params = append(params, param)
 				} else {

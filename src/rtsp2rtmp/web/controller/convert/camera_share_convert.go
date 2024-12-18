@@ -11,8 +11,8 @@ import (
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func ConvertPOToCameraShare(po camera_share_po.CameraSharePO) (camerashare entity.CameraShare, err error) {
-	err = common.POToEntity(po, &camerashare)
+func ConvertPOToCameraShare(po camera_share_po.CameraSharePO) (cameraShare entity.CameraShare, err error) {
+	err = common.POToEntity(po, &cameraShare)
 	if err != nil {
 		logs.Error("convertPOToCameraShare : %v", err)
 		err = fmt.Errorf("convertPOToCameraShare : %v", err)
@@ -21,15 +21,15 @@ func ConvertPOToCameraShare(po camera_share_po.CameraSharePO) (camerashare entit
 	return
 }
 
-func ConvertCameraShareToVO(camerashare entity.CameraShare) (vo camera_share_vo.CameraShareVO, err error) {
+func ConvertCameraShareToVO(cameraShare entity.CameraShare) (vo camera_share_vo.CameraShareVO, err error) {
 	vo = camera_share_vo.CameraShareVO{}
-	err = common.EntityToVO(camerashare, &vo)
+	err = common.EntityToVO(cameraShare, &vo)
 	if err != nil {
 		logs.Error("convertCameraShareToVO : %v", err)
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
 		return
 	}
-	camera, err := base_service.CameraSelectById(vo.CameraId)
+camera, err := base_service.CameraSelectById(vo.CameraId)
 	if err != nil {
 		logs.Error("convertCameraShareToVO : %v", err)
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
@@ -43,15 +43,16 @@ func ConvertCameraShareToVO(camerashare entity.CameraShare) (vo camera_share_vo.
 		return
 	}
 	vo.Camera = cameraVO
+	
 	return
 }
 
-func ConvertCameraShareToVOList(camerashares []entity.CameraShare) (voList []camera_share_vo.CameraShareVO, err error) {
+func ConvertCameraShareToVOList(cameraShares []entity.CameraShare) (voList []camera_share_vo.CameraShareVO, err error) {
 	voList = make([]camera_share_vo.CameraShareVO, 0)
-	for _, camerashare := range camerashares {
-		vo, err_convert := ConvertCameraShareToVO(camerashare)
+	for _, cameraShare := range cameraShares {
+		vo, err_convert := ConvertCameraShareToVO(cameraShare)
 		if err_convert != nil {
-			logs.Error("ConvertCameraShareToVOList : %v", err_convert)
+			logs.Error("convertCameraShareToVO : %v", err_convert)
 			err = fmt.Errorf("ConvertCameraShareToVOList : %v", err_convert)
 			return
 		}

@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"fmt"
@@ -33,8 +33,8 @@ func CameraEnabled(ctx *gin.Context) {
 		return
 	}
 	camera.Enabled = q.Enabled
-	if q.Enabled != 1 {
-		camera.OnlineStatus = 0
+	if q.Enabled != true {
+		camera.OnlineStatus = false
 	}
 	_, err = bas_service.CameraUpdateById(camera)
 	if err != nil {
@@ -43,7 +43,7 @@ func CameraEnabled(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	if q.Enabled != 1 {
+	if q.Enabled != true {
 		logs.Debug("close camera conn: %s", camera.Code)
 		select {
 		case codeStream <- camera.Code:
@@ -82,10 +82,10 @@ func RtmpPushChange(ctx *gin.Context) {
 		return
 	}
 	switch {
-	case q.RtmpPushStatus != 1:
+	case q.RtmpPushStatus != true:
 		logs.Info("camera [%s] stop push rtmp", q.Code)
 		flvadmin.GetSingleRtmpFlvAdmin().StopWrite(q.Code)
-	case q.RtmpPushStatus == 1:
+	case q.RtmpPushStatus == true:
 		flvadmin.GetSingleRtmpFlvAdmin().StartWrite(q.Code)
 		logs.Info("camera [%s] start push rtmp", q.Code)
 	}
@@ -121,10 +121,10 @@ func CameraSaveVideoChange(ctx *gin.Context) {
 		return
 	}
 	switch {
-	case q.SaveVideo != 1:
+	case q.SaveVideo != true:
 		logs.Info("camera [%s] stop save video", q.Code)
 		flvadmin.GetSingleFileFlvAdmin().StopWrite(q.Code)
-	case q.SaveVideo == 1:
+	case q.SaveVideo == true:
 		flvadmin.GetSingleFileFlvAdmin().StartWrite(q.Code)
 		logs.Info("camera [%s] start save video", q.Code)
 	}
@@ -160,9 +160,9 @@ func CameraLiveChange(ctx *gin.Context) {
 		return
 	}
 	switch {
-	case q.Live != 1:
+	case q.Live != true:
 		flvadmin.GetSingleHttpFlvAdmin().StopWrite(q.Code)
-	case q.Live == 1:
+	case q.Live == true:
 		flvadmin.GetSingleHttpFlvAdmin().StartWrite(q.Code)
 	}
 

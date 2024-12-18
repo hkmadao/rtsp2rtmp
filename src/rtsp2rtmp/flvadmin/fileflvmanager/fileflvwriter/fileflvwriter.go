@@ -87,10 +87,10 @@ func NewFileFlvWriter(
 		logs.Error("query camera error : %v", err)
 		return ffw
 	}
-	if camera.OnlineStatus != 1 {
+	if camera.OnlineStatus != true {
 		return ffw
 	}
-	if camera.SaveVideo != 1 {
+	if camera.SaveVideo != true {
 		go func() {
 			for {
 				select {

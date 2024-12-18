@@ -105,10 +105,10 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		logs.Error("not found camera : %s", rfw.code)
 		return
 	}
-	if camera.OnlineStatus != 1 {
+	if camera.OnlineStatus != true {
 		return
 	}
-	if camera.RtmpPushStatus != 1 {
+	if camera.RtmpPushStatus != true {
 		go func() {
 			for {
 				select {

@@ -61,10 +61,10 @@ func NewHttpFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		logs.Error("query camera error : %v", err)
 		return hfm
 	}
-	if camera.OnlineStatus != 1 {
+	if camera.OnlineStatus != true {
 		return hfm
 	}
-	if camera.Live != 1 {
+	if camera.Live != true {
 		go func() {
 			for {
 				select {

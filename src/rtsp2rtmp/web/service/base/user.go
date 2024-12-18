@@ -10,11 +10,11 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dyn_query"
 )
 
-func getCameraShareName() string {
-	return "CameraShare"
+func getUserName() string {
+	return "User"
 }
 
-func CameraShareCreate(e entity.CameraShare) (i int64, err error) {
+func UserCreate(e entity.User) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Insert(&e)
 	if err != nil && err != orm.ErrLastInsertIdUnavailable {
@@ -24,7 +24,7 @@ func CameraShareCreate(e entity.CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareUpdateById(e entity.CameraShare) (i int64, err error) {
+func UserUpdateById(e entity.User) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Update(&e)
 	if err != nil {
@@ -34,7 +34,7 @@ func CameraShareUpdateById(e entity.CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareDelete(e entity.CameraShare) (i int64, err error) {
+func UserDelete(e entity.User) (i int64, err error) {
 	o := orm.NewOrm()
 	i, err = o.Delete(&e)
 	if err != nil {
@@ -44,9 +44,9 @@ func CameraShareDelete(e entity.CameraShare) (i int64, err error) {
 	return i, nil
 }
 
-func CameraShareSelectById(id string) (model entity.CameraShare, err error) {
+func UserSelectById(id string) (model entity.User, err error) {
 	o := orm.NewOrm()
-	model = entity.CameraShare{ Id: id  }
+	model = entity.User{ IdUser: id  }
 
 	err = o.Read(&model)
 
@@ -63,13 +63,13 @@ func CameraShareSelectById(id string) (model entity.CameraShare, err error) {
 	return
 }
 
-func CameraShareSelectByIds(ids []string) (models []entity.CameraShare, err error) {
+func UserSelectByIds(ids []string) (models []entity.User, err error) {
 	idsNew := make([]interface{}, 0)
 	for _, id := range ids {
 		idsNew = append(idsNew, id)
 	}
-	condition := common.GetInCondition("id", idsNew)
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+	condition := common.GetInCondition("idUser", idsNew)
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("selectByIds error: %v", err_build)
 		return
@@ -90,8 +90,8 @@ func CameraShareSelectByIds(ids []string) (models []entity.CameraShare, err erro
 	return
 }
 
-func CameraShareFindCollectionByCondition(condition common.AqCondition) (models []entity.CameraShare, err error) {
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+func UserFindCollectionByCondition(condition common.AqCondition) (models []entity.User, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("findCollectionByCondition error: %v", err_build)
 		return
@@ -111,8 +111,8 @@ func CameraShareFindCollectionByCondition(condition common.AqCondition) (models 
 	return
 }
 
-func CameraShareFindOneByCondition(condition common.AqCondition) (model entity.CameraShare, err error) {
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+func UserFindOneByCondition(condition common.AqCondition) (model entity.User, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("findOneByCondition error: %v", err_build)
 		return
@@ -124,7 +124,7 @@ func CameraShareFindOneByCondition(condition common.AqCondition) (model entity.C
 	}
 	o := orm.NewOrm()
 	// execute the raw query string
-	models := make([]entity.CameraShare, 0)
+	models := make([]entity.User, 0)
 	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
 	if err_query != nil {
 		err = fmt.Errorf("findOneByCondition error: %v", err_make_sql)
@@ -142,9 +142,9 @@ func CameraShareFindOneByCondition(condition common.AqCondition) (model entity.C
 	return
 }
 
-func CameraShareFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pageInfo common.PageInfo, err error) {
+func UserFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pageInfo common.PageInfo, err error) {
 	condition := common.AqCondition{LogicNode: aqPageInfoInput.LogicNode, Orders: aqPageInfoInput.Orders}
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("findPageByCondition error: %v", err_build)
 		return
@@ -168,7 +168,7 @@ func CameraShareFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pag
 		return
 	}
 	// execute the raw query string
-	models := make([]entity.CameraShare, 0)
+	models := make([]entity.User, 0)
 	_, err_query := o.Raw(pageSqlStr, params...).QueryRows(&models)
 	if err_query != nil {
 		err = fmt.Errorf("findPageByCondition error: %v", err_make_sql)
@@ -183,8 +183,8 @@ func CameraShareFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pag
 	return
 }
 
-func CameraShareCountByCondition(condition common.AqCondition) (total uint64, err error) {
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+func UserCountByCondition(condition common.AqCondition) (total uint64, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("countByCondition error: %v", err_build)
 		return
@@ -204,8 +204,8 @@ func CameraShareCountByCondition(condition common.AqCondition) (total uint64, er
 	return
 }
 
-func CameraShareExistsByCondition(condition common.AqCondition) (exist bool, err error) {
-	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getCameraShareName())
+func UserExistsByCondition(condition common.AqCondition) (exist bool, err error) {
+	var querySqlBuilder, err_build = dyn_query.NewQuerySqlBuilder(condition, getUserName())
 	if err_build != nil {
 		err = fmt.Errorf("existsByCondition error: %v", err_build)
 		return

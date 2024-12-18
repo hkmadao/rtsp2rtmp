@@ -61,17 +61,17 @@ func (t *task) offlineCamera() {
 			logs.Error("query camera error : %v", err)
 		}
 		for _, cs := range css {
-			if cs.OnlineStatus != 1 {
+			if cs.OnlineStatus != true {
 				continue
 			}
 			if fgUseFfmpeg {
 				if exists := rtmpserver.GetSingleRtmpServer().ExistsPublisher(cs.Code); !exists {
-					cs.OnlineStatus = 0
+					cs.OnlineStatus = false
 					base_service.CameraUpdateById(cs)
 				}
 			} else {
 				if exists := rtspclientmanager.GetSingleRtspClientManager().ExistsPublisher(cs.Code); !exists {
-					cs.OnlineStatus = 0
+					cs.OnlineStatus = false
 					base_service.CameraUpdateById(cs)
 				}
 			}

@@ -13,7 +13,7 @@ import (
 	"github.com/go-cmd/cmd"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
-	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
@@ -70,7 +70,7 @@ func (rs *FFmpegManager) checkBlockFFmpegProcess() {
 			return
 		}
 		for _, camera := range es {
-			if camera.OnlineStatus != 1 {
+			if camera.OnlineStatus != true {
 				v, b := rs.rcs.Load(camera.Code)
 				if b {
 					ffmpegInfo := v.(FFmpegInfo)
@@ -125,7 +125,7 @@ func (s *FFmpegManager) startConnections() {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
 				continue
 			}
-			if camera.Enabled != 1 {
+			if camera.Enabled != true {
 				continue
 			}
 			go s.connRtsp(camera.Code)
@@ -150,7 +150,7 @@ func (ffmpegManager *FFmpegManager) connRtsp(code string) {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
 	}
-	if camera.Enabled != 1 {
+	if camera.Enabled != true {
 		logs.Error("camera [%s] disabled : %v", code)
 		return
 	}

@@ -1,6 +1,8 @@
-package camerashare
+package po
 
-import "time"
+import (
+	"time"
+)
 
 // 摄像头分享
 type CameraSharePO struct {
@@ -11,7 +13,7 @@ type CameraSharePO struct {
 	// 权限码:
 	AuthCode string `json:"authCode"`
 	// 启用状态:
-	Enabled int `json:"enabled"`
+	Enabled bool `json:"enabled"`
 	// 创建时间:
 	Created time.Time `json:"created"`
 	// 开始时间:

@@ -1,12 +1,14 @@
-package camera
+package po
 
-import "time"
+import (
+	"time"
+)
 
 // 摄像头
 type CameraPO struct {
 	// 摄像头主属性
 	Id string `json:"id"`
-	// code:
+	// 编号:
 	Code string `json:"code"`
 	// rtsp地址:
 	RtspUrl string `json:"rtspUrl"`
@@ -15,15 +17,15 @@ type CameraPO struct {
 	// 播放权限码:
 	PlayAuthCode string `json:"playAuthCode"`
 	// 在线状态:
-	OnlineStatus int `json:"onlineStatus"`
+	OnlineStatus bool `json:"onlineStatus"`
 	// 启用状态:
-	Enabled int `json:"enabled"`
+	Enabled bool `json:"enabled"`
 	// rtmp推送状态:
-	RtmpPushStatus int `json:"rtmpPushStatus"`
+	RtmpPushStatus bool `json:"rtmpPushStatus"`
 	// 保存录像状态:
-	SaveVideo int `json:"saveVideo"`
+	SaveVideo bool `json:"saveVideo"`
 	// 直播状态:
-	Live int `json:"live"`
+	Live bool `json:"live"`
 	// 创建时间:
 	Created time.Time `json:"created"`
 }

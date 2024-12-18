@@ -88,10 +88,10 @@ func NewHttpFlvWriter(
 		logs.Error("query camera error : %v", err)
 		return hfw
 	}
-	if camera.OnlineStatus != 1 {
+	if camera.OnlineStatus != true {
 		return hfw
 	}
-	if camera.Live != 1 {
+	if camera.Live != true {
 		go func() {
 			for {
 				select {
