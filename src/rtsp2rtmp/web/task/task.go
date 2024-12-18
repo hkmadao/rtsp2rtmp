@@ -4,8 +4,10 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -47,6 +49,11 @@ func (t *task) offlineCamera() {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
+	fgUseFfmpeg, err := config.Bool("server.use-ffmpeg")
+	if err != nil {
+		logs.Error("get use-ffmpeg fail : %v", err)
+		fgUseFfmpeg = false
+	}
 	for {
 		condition := common.GetEmptyCondition()
 		css, err := base_service.CameraFindCollectionByCondition(condition)
@@ -57,9 +64,16 @@ func (t *task) offlineCamera() {
 			if cs.OnlineStatus != 1 {
 				continue
 			}
-			if exists := rtmpserver.GetSingleRtmpServer().ExistsPublisher(cs.Code); !exists {
-				cs.OnlineStatus = 0
-				base_service.CameraUpdateById(cs)
+			if fgUseFfmpeg {
+				if exists := rtmpserver.GetSingleRtmpServer().ExistsPublisher(cs.Code); !exists {
+					cs.OnlineStatus = 0
+					base_service.CameraUpdateById(cs)
+				}
+			} else {
+				if exists := rtspclientmanager.GetSingleRtspClientManager().ExistsPublisher(cs.Code); !exists {
+					cs.OnlineStatus = 0
+					base_service.CameraUpdateById(cs)
+				}
 			}
 		}
 		<-time.After(10 * time.Minute)

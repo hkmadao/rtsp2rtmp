@@ -204,10 +204,28 @@ func (dynQuery *DynQueryMysql) makeConditionsToken(conditionExpr ConditionExpres
 				params = append(params, fmt.Sprintf("%s", simpleExpr.Values[0])+"%")
 			} else if simpleExpr.ExprType == Equal {
 				simpleExprTokens = append(simpleExprTokens, "=", "?")
-				params = append(params, simpleExpr.Values[0])
+				vBool, ok := simpleExpr.Values[0].(bool)
+				if ok {
+					param := 0
+					if vBool {
+						param = 1
+					}
+					params = append(params, param)
+				} else {
+					params = append(params, simpleExpr.Values[0])
+				}
 			} else if simpleExpr.ExprType == NotEqual {
 				simpleExprTokens = append(simpleExprTokens, "!=", "?")
-				params = append(params, simpleExpr.Values[0])
+				vBool, ok := simpleExpr.Values[0].(bool)
+				if ok {
+					param := 0
+					if vBool {
+						param = 1
+					}
+					params = append(params, param)
+				} else {
+					params = append(params, simpleExpr.Values[0])
+				}
 			} else if simpleExpr.ExprType == GT {
 				simpleExprTokens = append(simpleExprTokens, ">", "?")
 				params = append(params, simpleExpr.Values[0])

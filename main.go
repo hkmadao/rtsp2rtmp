@@ -9,7 +9,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/ffmpegmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
 
-	// "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/register"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/task"
@@ -17,13 +17,22 @@ import (
 	// "net/http"
 	// _ "net/http/pprof"
 
+	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 )
 
 func main() {
-	// rtspclientmanager.GetSingleRtspClientManager().StartClient()
-	rtmpserver.GetSingleRtmpServer().StartRtmpServer()
-	ffmpegmanager.GetSingleFFmpegManager().StartClient()
+	fgUseFfmpeg, err := config.Bool("server.use-ffmpeg")
+	if err != nil {
+		logs.Error("get use-ffmpeg fail : %v", err)
+		fgUseFfmpeg = false
+	}
+	if fgUseFfmpeg {
+		rtmpserver.GetSingleRtmpServer().StartRtmpServer()
+		ffmpegmanager.GetSingleFFmpegManager().StartClient()
+	} else {
+		rtspclientmanager.GetSingleRtspClientManager().StartClient()
+	}
 	task.GetSingleTask().StartTask()
 	web.GetSingleWeb().StartWeb()
 	sigs := make(chan os.Signal, 1)

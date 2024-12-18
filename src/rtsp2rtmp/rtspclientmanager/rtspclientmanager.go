@@ -12,7 +12,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 
-	// ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
+	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controllers/ext"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
@@ -33,7 +33,7 @@ func GetSingleRtspClientManager() *RtspClientManager {
 
 func (rs *RtspClientManager) StartClient() {
 	go rs.startConnections()
-	// go rs.stopConn(ext_controller.CodeStream())
+	go rs.stopConn(ext_controller.CodeStream())
 }
 
 func (rc *RtspClientManager) ExistsPublisher(code string) bool {
@@ -104,7 +104,7 @@ func (s *RtspClientManager) startConnections() {
 			}
 			go s.connRtsp(camera.Code)
 		}
-		<-time.After(1 * time.Second)
+		<-time.After(5 * time.Second)
 	}
 
 }

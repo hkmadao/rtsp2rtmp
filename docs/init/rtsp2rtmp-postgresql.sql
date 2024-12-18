@@ -43,7 +43,7 @@ CREATE TABLE public.camera_share (
 	id varchar NOT NULL,
 	camera_id varchar NULL, -- 摄像头标识
 	auth_code varchar NULL, -- 播放权限码
-	enabled varchar NULL, -- 启用状态：1.启用；0.禁用；
+	enabled  int2 NULL, -- 启用状态：1.启用；0.禁用；
 	created timestamp(0) NULL, -- 创建时间
 	deadline timestamp(0) NULL, -- 截止日期
 	"name" varchar NULL, -- 分享说明

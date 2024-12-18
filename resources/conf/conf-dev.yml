@@ -1,11 +1,15 @@
 server:
+    use-ffmpeg: false 
+    security: true
     user:
         name: admin
         password: admin
+    rtmp:
+        port: 1936
     http:
         port: 8080
         static:
-            path: D:\development\project\rtsp2rtmp-web\build
+            path: ./resources/static
     fileflv:
         path: ./resources/output/live
     log:

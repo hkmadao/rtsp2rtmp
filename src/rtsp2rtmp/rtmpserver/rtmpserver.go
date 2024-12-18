@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
@@ -175,11 +176,33 @@ func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {
 	done := make(chan int)
 	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
 	pktStream := make(chan av.Packet, 1024)
+	heartBeatChan := make(chan int)
 	defer func() {
 		close(done)
 		close(pktStream)
+		close(heartBeatChan)
 	}()
 
+	go func() {
+		defer func() {
+			if recover_rusult := recover(); recover_rusult != nil {
+				logs.Error("HandleConn error : %v", recover_rusult)
+			}
+		}()
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case _, ok := <-heartBeatChan:
+				if !ok {
+					return
+				}
+				ticker.Reset(10 * time.Second)
+			case <-ticker.C:
+				conn.Close()
+				return
+			}
+		}
+	}()
 	p := rtmppublisher.NewPublisher(done, pktStream, code, codecs, r)
 	r.rms.Store(camera.Code, p)
 	for {
@@ -188,6 +211,11 @@ func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {
 			logs.Error("ReadPacket error : %v", err)
 			break
 		}
+		select {
+		case heartBeatChan <- 1:
+		default:
+		}
+
 		select {
 		case pktStream <- pkt:
 		default:

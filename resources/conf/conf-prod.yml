@@ -1,5 +1,6 @@
 server:
-    security: false
+    use-ffmpeg: false 
+    security: true
     user:
         name: admin
         password: admin
@@ -18,5 +19,5 @@ server:
         driver-type: 4
         driver: postgres
         url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC
-        show-sql: true
+        show-sql: false
         

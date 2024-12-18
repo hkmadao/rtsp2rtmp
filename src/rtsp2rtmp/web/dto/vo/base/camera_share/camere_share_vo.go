@@ -11,7 +11,7 @@ type CameraShareVO struct {
 	// 权限码:
 	AuthCode string `json:"authCode"`
 	// 启用状态:
-	Enabled bool `json:"enabled"`
+	Enabled int `json:"enabled"`
 	// 创建时间:
 	Created time.Time `json:"created"`
 	// 开始时间:

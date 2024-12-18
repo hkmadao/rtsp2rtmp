@@ -13,7 +13,7 @@ type CameraShare struct {
 	// 权限码:
 	AuthCode string `orm:"column(auth_code)" json:"authCode"`
 	// 启用状态:
-	Enabled bool `orm:"column(enabled)" json:"enabled"`
+	Enabled int `orm:"column(enabled)" json:"enabled"`
 	// 创建时间:
 	Created time.Time `orm:"column(created)" json:"created"`
 	// 开始时间:
