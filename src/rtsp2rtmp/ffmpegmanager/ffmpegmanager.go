@@ -159,7 +159,7 @@ func (ffmpegManager *FFmpegManager) connRtsp(code string) {
 		logs.Error("get rtmp port fail : %v", err)
 		return
 	}
-	templatePasswd, _ := utils.UUID()
+	templatePasswd, _ := utils.GenerateId()
 	rtmpUrl := fmt.Sprintf("rtmp://127.0.0.1:%d/%s/%s", rtmpPort, code, templatePasswd)
 	portOpen := checkTargetPortStatus(camera.RtspUrl)
 	if !portOpen {

@@ -21,7 +21,7 @@ func TestNextToke(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NextToke()
+			got, err := NextToken()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NextToke() error = %v, wantErr %v", err, tt.wantErr)
 				return

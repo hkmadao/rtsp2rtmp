@@ -44,9 +44,19 @@ func TokenDelete(e entity.Token) (i int64, err error) {
 	return i, nil
 }
 
+func TokenDeleteByUsername(username string) (i int64, err error) {
+	o := orm.NewOrm()
+	rowResult, err := o.Raw("DELETE sys_token WHERE username = ?", username).Exec()
+	if err != nil {
+		logs.Error("delete user: %s tokens error : %v", username, err)
+		return 0, err
+	}
+	return rowResult.RowsAffected()
+}
+
 func TokenSelectById(id string) (model entity.Token, err error) {
 	o := orm.NewOrm()
-	model = entity.Token{ IdToken: id  }
+	model = entity.Token{IdToken: id}
 
 	err = o.Read(&model)
 

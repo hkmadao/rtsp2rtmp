@@ -33,7 +33,7 @@ func CameraAdd(ctx *gin.Context) {
 		return
 	}
 
-	id, _ := utils.UUID()
+	id, _ := utils.GenerateId()
 	camera.Id = id
 	_, err = base_service.CameraCreate(camera)
 	if err != nil {

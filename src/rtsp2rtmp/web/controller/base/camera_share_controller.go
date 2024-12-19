@@ -33,7 +33,7 @@ func CameraShareAdd(ctx *gin.Context) {
 		return
 	}
 
-	id, _ := utils.UUID()
+	id, _ := utils.GenerateId()
 	cameraShare.Id = id
 	_, err = base_service.CameraShareCreate(cameraShare)
 	if err != nil {
@@ -146,6 +146,28 @@ func CameraShareRemove(ctx *gin.Context) {
 		return
 	}
 	result := common.SuccessResultData(cameraShareGetById)
+	ctx.JSON(http.StatusOK, result)
+}
+
+func CameraShareBatchRemove(ctx *gin.Context) {
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	poes := []camera_share_po.CameraSharePO{}
+	err := ctx.BindJSON(&poes)
+	if err != nil {
+		logs.Error("param error : %v", err)
+		result := common.ErrorResult(fmt.Sprintf("param error : %v", err))
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	cameraShares, err := dto_convert.ConvertPOListToCameraShare(poes)
+	_, err = base_service.CameraShareBatchDelete(cameraShares)
+	if err != nil {
+		logs.Error("delete error: %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	result := common.SuccessResultMsg("remove success")
 	ctx.JSON(http.StatusOK, result)
 }
 

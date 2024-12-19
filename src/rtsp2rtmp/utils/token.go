@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-//start with date token
-func NextToke() (string, error) {
+// start with date token
+func NextToken() (string, error) {
 	timestamp := time.Now().Format("20060102150405")
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -21,7 +21,7 @@ func NextToke() (string, error) {
 	return timestamp + "-" + idstring, nil
 }
 
-//validate token
+// validate token
 func TokenTimeOut(token string, duration time.Duration) bool {
 	tokenTimeString := token[0:14]
 	if len(tokenTimeString) != 14 {
@@ -34,7 +34,7 @@ func TokenTimeOut(token string, duration time.Duration) bool {
 	return time.Now().After(tokenTime.Add(duration))
 }
 
-func UUID() (string, error) {
+func GenerateId() (string, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		logs.Error("Random error : %v", err)

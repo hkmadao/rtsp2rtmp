@@ -9,6 +9,8 @@ const (
 	VALUE_TYPE_NUMBER = "number"
 	// 布尔
 	VALUE_TYPE_BOOL = "bool"
+	// 日期
+	VALUE_TYPE_DATE_TIME = "DateTime"
 )
 
 type EDataType = string

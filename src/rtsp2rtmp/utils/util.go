@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"crypto/md5"
 	"encoding/binary"
+	"fmt"
 	"math"
 )
 
@@ -52,4 +54,9 @@ func ReverseString(s string) string {
 	}
 	// 将rune类型的切片转换为字符串类型并返回
 	return string(runes)
+}
+
+func Md5(unMd5Str string) (md5Str string) {
+	md5Str = fmt.Sprintf("%x", md5.Sum([]byte(unMd5Str)))
+	return
 }

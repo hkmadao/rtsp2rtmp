@@ -44,9 +44,22 @@ func CameraShareDelete(e entity.CameraShare) (i int64, err error) {
 	return i, nil
 }
 
+func CameraShareBatchDelete(es []entity.CameraShare) (i int64, err error) {
+	o := orm.NewOrm()
+	for _, e := range es {
+		_, err = o.Delete(&e)
+		if err != nil {
+			logs.Error("delete error : %v", err)
+			return 0, err
+		}
+	}
+	i = int64(len(es))
+	return i, nil
+}
+
 func CameraShareSelectById(id string) (model entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	model = entity.CameraShare{ Id: id  }
+	model = entity.CameraShare{Id: id}
 
 	err = o.Read(&model)
 

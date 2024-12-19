@@ -33,7 +33,7 @@ func UserAdd(ctx *gin.Context) {
 		return
 	}
 
-	id, _ := utils.UUID()
+	id, _ := utils.GenerateId()
 	user.IdUser = id
 	_, err = base_service.UserCreate(user)
 	if err != nil {

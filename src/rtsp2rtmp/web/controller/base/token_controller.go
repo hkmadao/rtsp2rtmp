@@ -33,7 +33,7 @@ func TokenAdd(ctx *gin.Context) {
 		return
 	}
 
-	id, _ := utils.UUID()
+	id, _ := utils.GenerateId()
 	token.IdToken = id
 	_, err = base_service.TokenCreate(token)
 	if err != nil {

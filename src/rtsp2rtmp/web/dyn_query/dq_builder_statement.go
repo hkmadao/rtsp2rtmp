@@ -57,6 +57,7 @@ const (
 	String = iota
 	Number
 	Bool
+	DateTime
 )
 
 type EOrderType = uint32

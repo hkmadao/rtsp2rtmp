@@ -3,6 +3,9 @@ package dyn_query
 import (
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/beego/beego/v2/adapter/logs"
 )
 
 type DynQueryMysql struct {
@@ -216,28 +219,67 @@ func (dynQuery *DynQueryMysql) makeConditionsToken(conditionExpr ConditionExpres
 				}
 			} else if simpleExpr.ExprType == NotEqual {
 				simpleExprTokens = append(simpleExprTokens, "!=", "?")
-				vBool, ok := simpleExpr.Values[0].(bool)
-				if ok {
-					param := 0
-					if vBool {
-						param = 1
-					}
-					params = append(params, param)
-				} else {
-					params = append(params, simpleExpr.Values[0])
-				}
+				params = append(params, simpleExpr.Values[0])
 			} else if simpleExpr.ExprType == GT {
 				simpleExprTokens = append(simpleExprTokens, ">", "?")
 				params = append(params, simpleExpr.Values[0])
 			} else if simpleExpr.ExprType == GTE {
 				simpleExprTokens = append(simpleExprTokens, ">=", "?")
-				params = append(params, simpleExpr.Values[0])
+				if simpleExpr.ValueType == DateTime {
+					vStr, ok := simpleExpr.Values[0].(string)
+					if ok {
+						vTime, errParse := time.Parse(time.RFC3339Nano, vStr)
+						if errParse != nil {
+							logs.Error("parse time error: %v", errParse)
+							err = fmt.Errorf("parse time error: %v", errParse)
+							return
+						}
+						params = append(params, vTime)
+					} else {
+						err = fmt.Errorf("parse string error")
+						return
+					}
+				} else {
+					params = append(params, simpleExpr.Values[0])
+				}
 			} else if simpleExpr.ExprType == LT {
 				simpleExprTokens = append(simpleExprTokens, "<", "?")
-				params = append(params, simpleExpr.Values[0])
+				if simpleExpr.ValueType == DateTime {
+					vStr, ok := simpleExpr.Values[0].(string)
+					if ok {
+						vTime, errParse := time.Parse(time.RFC3339Nano, vStr)
+						if errParse != nil {
+							logs.Error("parse time error: %v", errParse)
+							err = fmt.Errorf("parse time error: %v", errParse)
+							return
+						}
+						params = append(params, vTime)
+					} else {
+						err = fmt.Errorf("parse string error")
+						return
+					}
+				} else {
+					params = append(params, simpleExpr.Values[0])
+				}
 			} else if simpleExpr.ExprType == LTE {
 				simpleExprTokens = append(simpleExprTokens, "<=", "?")
-				params = append(params, simpleExpr.Values[0])
+				if simpleExpr.ValueType == DateTime {
+					vStr, ok := simpleExpr.Values[0].(string)
+					if ok {
+						vTime, errParse := time.Parse(time.RFC3339Nano, vStr)
+						if errParse != nil {
+							logs.Error("parse time error: %v", errParse)
+							err = fmt.Errorf("parse time error: %v", errParse)
+							return
+						}
+						params = append(params, vTime)
+					} else {
+						err = fmt.Errorf("parse string error")
+						return
+					}
+				} else {
+					params = append(params, simpleExpr.Values[0])
+				}
 			} else if simpleExpr.ExprType == In {
 				qustionMarkArr := getQuestionMarkArr(len(simpleExpr.Values))
 				simpleExprTokens = append(simpleExprTokens, "IN(", strings.Join(qustionMarkArr, ","), ")")

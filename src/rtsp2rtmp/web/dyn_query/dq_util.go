@@ -1,11 +1,11 @@
 package dyn_query
 
 import (
-	"crypto/md5"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/register"
 )
@@ -15,11 +15,6 @@ func mergeMaps(map1, map2 map[string]uint32) map[string]uint32 {
 		map1[k] = v
 	}
 	return map1
-}
-
-func Md5(unMd5Str string) (md5Str string) {
-	md5Str = fmt.Sprintf("%x", md5.Sum([]byte(unMd5Str)))
-	return
 }
 
 func getJoinNamesFromLogicNodes(
@@ -108,7 +103,7 @@ func makeJoinSelect(
 	joinExpr.JoinType = LeftJoin
 	joinExpr.TableName = ref_desc.EntityInfo.TableName
 	var alias_name = strings.Join(attrs[:index+1], ".")
-	var aliasNameMd5 = Md5(alias_name)
+	var aliasNameMd5 = utils.Md5(alias_name)
 	joinExpr.AliasName = aliasNameMd5
 	if attr_info.DataType == common.DATA_TYPE_REF ||
 		attr_info.DataType == common.DATA_TYPE_SINGLE_REF {
@@ -183,7 +178,7 @@ func makeColumnOrderBy(
 				var orderExpr = OrderExpr{
 					OrderType: ASC,
 				}
-				orderExpr.TableAliasName = Md5(alias_name)
+				orderExpr.TableAliasName = utils.Md5(alias_name)
 				orderExpr.ColumnName = attr_info.ColumnName
 				orderExprs = append(orderExprs, orderExpr)
 			}
@@ -209,7 +204,7 @@ func makeColumnOrderBy(
 				var orderExpr = OrderExpr{
 					OrderType: DESC,
 				}
-				orderExpr.TableAliasName = Md5(alias_name)
+				orderExpr.TableAliasName = utils.Md5(alias_name)
 				orderExpr.ColumnName = attr_info.ColumnName
 				orderExprs = append(orderExprs, orderExpr)
 			}
@@ -524,7 +519,7 @@ func makeParamCondition(
 	fg_md5_alias_name bool,
 ) (expr_temp SimpleExpr, err error) {
 	if fg_md5_alias_name {
-		alias_name = Md5(alias_name)
+		alias_name = utils.Md5(alias_name)
 	}
 	valueType, err := getValueType(attr_info)
 	if err != nil {
@@ -551,6 +546,9 @@ func getValueType(attr_info common.AttributeInfo) (valueType EValueType, err err
 		return
 	} else if attr_info.ValueType == common.VALUE_TYPE_BOOL {
 		valueType = Bool
+		return
+	} else if attr_info.ValueType == common.VALUE_TYPE_DATE_TIME {
+		valueType = DateTime
 		return
 	} else {
 		err = fmt.Errorf("attr: %s unsupport value type: %s", attr_info.Name, attr_info.ValueType)

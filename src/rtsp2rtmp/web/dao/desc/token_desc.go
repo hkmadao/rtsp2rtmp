@@ -38,7 +38,7 @@ func GetTokenDesc() *common.EntityDesc {
 		Name:        "createTime",
 		DisplayName: "创建时间",
 		DataType:    "DateTime",
-		ValueType:   "string",
+		ValueType:   "DateTime",
 	}
 	var tokenAttributeInfo = &common.AttributeInfo{
 		ColumnName:  "token",
@@ -52,7 +52,7 @@ func GetTokenDesc() *common.EntityDesc {
 		Name:        "expiredTime",
 		DisplayName: "过期时间",
 		DataType:    "DateTime",
-		ValueType:   "string",
+		ValueType:   "DateTime",
 	}
 	var userInfoStringAttributeInfo = &common.AttributeInfo{
 		ColumnName:  "user_info_string",

@@ -1,4 +1,4 @@
-package controller
+package ext
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
-	bas_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 func CameraEnabled(ctx *gin.Context) {
@@ -25,7 +25,7 @@ func CameraEnabled(ctx *gin.Context) {
 		return
 	}
 
-	camera, err := bas_service.CameraSelectById(q.Id)
+	camera, err := base_service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -36,7 +36,7 @@ func CameraEnabled(ctx *gin.Context) {
 	if q.Enabled != true {
 		camera.OnlineStatus = false
 	}
-	_, err = bas_service.CameraUpdateById(camera)
+	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
 		logs.Error("enabled camera status %d error : %v", camera.Enabled, err)
 		result := common.ErrorResult("internal error")
@@ -66,7 +66,7 @@ func RtmpPushChange(ctx *gin.Context) {
 		return
 	}
 
-	camera, err := bas_service.CameraSelectById(q.Id)
+	camera, err := base_service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -74,7 +74,7 @@ func RtmpPushChange(ctx *gin.Context) {
 		return
 	}
 	camera.RtmpPushStatus = q.RtmpPushStatus
-	_, err = bas_service.CameraUpdateById(camera)
+	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
 		logs.Error("RtmpPushEnabled camera status %d error : %v", camera.Enabled, err)
 		result := common.ErrorResult("internal error")
@@ -105,7 +105,7 @@ func CameraSaveVideoChange(ctx *gin.Context) {
 		return
 	}
 
-	camera, err := bas_service.CameraSelectById(q.Id)
+	camera, err := base_service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -113,7 +113,7 @@ func CameraSaveVideoChange(ctx *gin.Context) {
 		return
 	}
 	camera.SaveVideo = q.SaveVideo
-	_, err = bas_service.CameraUpdateById(camera)
+	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
 		logs.Error("SaveVideo camera status %d error : %v", camera.SaveVideo, err)
 		result := common.ErrorResult("internal error")
@@ -144,7 +144,7 @@ func CameraLiveChange(ctx *gin.Context) {
 		return
 	}
 
-	camera, err := bas_service.CameraSelectById(q.Id)
+	camera, err := base_service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -152,7 +152,7 @@ func CameraLiveChange(ctx *gin.Context) {
 		return
 	}
 	camera.Live = q.Live
-	_, err = bas_service.CameraUpdateById(camera)
+	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
 		logs.Error("Live camera status %d error : %v", camera.Live, err)
 		result := common.ErrorResult("internal error")
@@ -181,16 +181,16 @@ func CameraPlayAuthCodeReset(ctx *gin.Context) {
 		return
 	}
 
-	camera, err := bas_service.CameraSelectById(q.Id)
+	camera, err := base_service.CameraSelectById(q.Id)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	playAuthCode, _ := utils.UUID()
+	playAuthCode, _ := utils.GenerateId()
 	camera.PlayAuthCode = playAuthCode
-	_, err = bas_service.CameraUpdateById(camera)
+	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
 		logs.Error("PlayAuthCode camera status %d error : %v", camera.PlayAuthCode, err)
 		result := common.ErrorResult("internal error")

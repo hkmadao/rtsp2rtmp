@@ -21,6 +21,20 @@ func ConvertPOToCameraShare(po camera_share_po.CameraSharePO) (cameraShare entit
 	return
 }
 
+func ConvertPOListToCameraShare(poes []camera_share_po.CameraSharePO) ([]entity.CameraShare, error) {
+	cameraShares := make([]entity.CameraShare, len(poes))
+	for i, po := range poes {
+		cameraShare, err_convert := ConvertPOToCameraShare(po)
+		if err_convert != nil {
+			logs.Error("ConvertPOListToCameraShare : %v", err_convert)
+			err := fmt.Errorf("ConvertPOListToCameraShare : %v", err_convert)
+			return nil, err
+		}
+		cameraShares[i] = cameraShare
+	}
+	return cameraShares, nil
+}
+
 func ConvertCameraShareToVO(cameraShare entity.CameraShare) (vo camera_share_vo.CameraShareVO, err error) {
 	vo = camera_share_vo.CameraShareVO{}
 	err = common.EntityToVO(cameraShare, &vo)
@@ -29,7 +43,7 @@ func ConvertCameraShareToVO(cameraShare entity.CameraShare) (vo camera_share_vo.
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
 		return
 	}
-camera, err := base_service.CameraSelectById(vo.CameraId)
+	camera, err := base_service.CameraSelectById(vo.CameraId)
 	if err != nil {
 		logs.Error("convertCameraShareToVO : %v", err)
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
@@ -43,7 +57,7 @@ camera, err := base_service.CameraSelectById(vo.CameraId)
 		return
 	}
 	vo.Camera = cameraVO
-	
+
 	return
 }
 
