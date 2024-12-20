@@ -10,6 +10,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
+	ext_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/ext"
 )
 
 type ModifyPasswordParams struct {
@@ -72,7 +73,7 @@ func ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	base_service.TokenDeleteByUsername(user.Account)
+	ext_service.TokenDeleteByUsername(user.Account)
 
 	result := common.SuccessResultMsg("user password change success, please relogin")
 	ctx.JSON(http.StatusOK, result)

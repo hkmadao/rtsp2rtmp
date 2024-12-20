@@ -60,9 +60,9 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := utils.NextToken()
+	token, err := utils.GenarateRandStr(32)
 	if err != nil {
-		logs.Error("user: %s create token fail")
+		logs.Error("user: %s create token fail: %v", err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return

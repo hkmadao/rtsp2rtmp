@@ -149,6 +149,28 @@ func CameraRemove(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+func CameraBatchRemove(ctx *gin.Context) {
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	poes := []camera_po.CameraPO{}
+	err := ctx.BindJSON(&poes)
+	if err != nil {
+		logs.Error("param error : %v", err)
+		result := common.ErrorResult(fmt.Sprintf("param error : %v", err))
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	cameras, err := dto_convert.ConvertPOListToCamera(poes)
+	_, err = base_service.CameraBatchDelete(cameras)
+	if err != nil {
+		logs.Error("delete error: %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	result := common.SuccessResultMsg("remove success")
+	ctx.JSON(http.StatusOK, result)
+}
+
 func CameraGetById(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	id, ok := ctx.Params.Get("id")

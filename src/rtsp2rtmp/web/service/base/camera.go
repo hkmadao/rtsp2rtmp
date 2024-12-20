@@ -44,6 +44,19 @@ func CameraDelete(e entity.Camera) (i int64, err error) {
 	return i, nil
 }
 
+func CameraBatchDelete(es []entity.Camera) (i int64, err error) {
+	o := orm.NewOrm()
+	for _, e := range es {
+		_, err = o.Delete(&e)
+		if err != nil {
+			logs.Error("delete error : %v", err)
+			return 0, err
+		}
+	}
+	i = int64(len(es))
+	return i, nil
+}
+
 func CameraSelectById(id string) (model entity.Camera, err error) {
 	o := orm.NewOrm()
 	model = entity.Camera{ Id: id  }

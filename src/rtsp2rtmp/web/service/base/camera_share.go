@@ -59,7 +59,7 @@ func CameraShareBatchDelete(es []entity.CameraShare) (i int64, err error) {
 
 func CameraShareSelectById(id string) (model entity.CameraShare, err error) {
 	o := orm.NewOrm()
-	model = entity.CameraShare{Id: id}
+	model = entity.CameraShare{ Id: id  }
 
 	err = o.Read(&model)
 

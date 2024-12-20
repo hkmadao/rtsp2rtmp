@@ -43,7 +43,7 @@ func ConvertCameraShareToVO(cameraShare entity.CameraShare) (vo camera_share_vo.
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
 		return
 	}
-	camera, err := base_service.CameraSelectById(vo.CameraId)
+camera, err := base_service.CameraSelectById(vo.CameraId)
 	if err != nil {
 		logs.Error("convertCameraShareToVO : %v", err)
 		err = fmt.Errorf("convertCameraShareToVO : %v", err)
@@ -57,7 +57,7 @@ func ConvertCameraShareToVO(cameraShare entity.CameraShare) (vo camera_share_vo.
 		return
 	}
 	vo.Camera = cameraVO
-
+	
 	return
 }
 

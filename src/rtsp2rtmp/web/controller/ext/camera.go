@@ -159,11 +159,10 @@ func CameraLiveChange(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	switch {
-	case q.Live != true:
-		flvadmin.GetSingleHttpFlvAdmin().StopWrite(q.Code)
-	case q.Live == true:
+	if q.Live {
 		flvadmin.GetSingleHttpFlvAdmin().StartWrite(q.Code)
+	} else {
+		flvadmin.GetSingleHttpFlvAdmin().StopWrite(q.Code)
 	}
 
 	result := common.SuccessResultWithMsg("succss", camera)
@@ -188,11 +187,11 @@ func CameraPlayAuthCodeReset(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	playAuthCode, _ := utils.GenerateId()
+	playAuthCode := utils.GenarateRandName()
 	camera.PlayAuthCode = playAuthCode
 	_, err = base_service.CameraUpdateById(camera)
 	if err != nil {
-		logs.Error("PlayAuthCode camera status %d error : %v", camera.PlayAuthCode, err)
+		logs.Error("Camera: %s PlayAuthCode reset error : %v", camera.Code, err)
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusOK, result)
 		return

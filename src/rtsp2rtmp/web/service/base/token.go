@@ -44,14 +44,17 @@ func TokenDelete(e entity.Token) (i int64, err error) {
 	return i, nil
 }
 
-func TokenDeleteByUsername(username string) (i int64, err error) {
+func TokenBatchDelete(es []entity.Token) (i int64, err error) {
 	o := orm.NewOrm()
-	rowResult, err := o.Raw("DELETE sys_token WHERE username = ?", username).Exec()
-	if err != nil {
-		logs.Error("delete user: %s tokens error : %v", username, err)
-		return 0, err
+	for _, e := range es {
+		_, err = o.Delete(&e)
+		if err != nil {
+			logs.Error("delete error : %v", err)
+			return 0, err
+		}
 	}
-	return rowResult.RowsAffected()
+	i = int64(len(es))
+	return i, nil
 }
 
 func TokenSelectById(id string) (model entity.Token, err error) {

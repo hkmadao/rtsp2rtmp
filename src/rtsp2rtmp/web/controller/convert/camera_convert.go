@@ -20,6 +20,20 @@ func ConvertPOToCamera(po camera_po.CameraPO) (camera entity.Camera, err error) 
 	return
 }
 
+func ConvertPOListToCamera(poes []camera_po.CameraPO) ([]entity.Camera, error) {
+	cameras := make([]entity.Camera, len(poes))
+	for i, po := range poes {
+		camera, err_convert := ConvertPOToCamera(po)
+		if err_convert != nil {
+			logs.Error("ConvertPOListToCamera : %v", err_convert)
+			err := fmt.Errorf("ConvertPOListToCamera : %v", err_convert)
+			return nil, err
+		}
+		cameras[i] = camera
+	}
+	return cameras, nil
+}
+
 func ConvertCameraToVO(camera entity.Camera) (vo camera_vo.CameraVO, err error) {
 	vo = camera_vo.CameraVO{}
 	err = common.EntityToVO(camera, &vo)
@@ -47,7 +61,7 @@ func ConvertCameraToVO(camera entity.Camera) (vo camera_vo.CameraVO, err error) 
 	// 	}
 	// 	cameraShareVOList = append(cameraShareVOList, cameraShareVO)
 	// }
-	// vo.CameraShares = cameraShareVOList
+	// vo.cameraShares = cameraShareVOList
 
 	return
 }

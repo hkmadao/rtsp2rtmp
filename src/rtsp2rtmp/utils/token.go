@@ -1,11 +1,15 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"math/rand"
+
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/google/uuid"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 // start with date token
@@ -35,12 +39,47 @@ func TokenTimeOut(token string, duration time.Duration) bool {
 }
 
 func GenerateId() (string, error) {
-	id, err := uuid.NewRandom()
+	idstring, err := gonanoid.New()
 	if err != nil {
-		logs.Error("Random error : %v", err)
+		logs.Error("GenerateId error : %v", err)
 		return "", err
 	}
-	idstring := id.String()
-	idstring = strings.ReplaceAll(idstring, "-", "")
 	return idstring, nil
+}
+
+func GenarateRandStr(pwdLeng int) (string, error) {
+	if pwdLeng == 0 {
+		err := fmt.Errorf("length is zero")
+		return "", err
+	}
+	str := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()"
+	chars := []rune(str)
+	pwdStrArr := make([]string, pwdLeng)
+	for i := 0; i < pwdLeng; {
+		num := rand.Intn(len(chars))
+		pwdStrArr = append(pwdStrArr, string(chars[num]))
+		i++
+	}
+	return strings.Join(pwdStrArr, ""), nil
+}
+
+func GenarateRandName() string {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pwdLeng := rand.Intn(11) + 10
+	str := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	chars := []rune(str)
+	pwdStrArr := make([]string, pwdLeng)
+	for i := 0; i < pwdLeng; {
+
+		num := rand.Intn(len(chars))
+		pwdStrArr = append(pwdStrArr, string(chars[num]))
+		i++
+	}
+	return strings.Join(pwdStrArr, "")
+}
+
+func GenaratePwd() (string, error) {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pwdLeng := rand.Intn(11) + 10
+	return GenarateRandStr(pwdLeng)
 }

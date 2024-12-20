@@ -149,6 +149,28 @@ func UserRemove(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+func UserBatchRemove(ctx *gin.Context) {
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	poes := []user_po.UserPO{}
+	err := ctx.BindJSON(&poes)
+	if err != nil {
+		logs.Error("param error : %v", err)
+		result := common.ErrorResult(fmt.Sprintf("param error : %v", err))
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	users, err := dto_convert.ConvertPOListToUser(poes)
+	_, err = base_service.UserBatchDelete(users)
+	if err != nil {
+		logs.Error("delete error: %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	result := common.SuccessResultMsg("remove success")
+	ctx.JSON(http.StatusOK, result)
+}
+
 func UserGetById(ctx *gin.Context) {
 	// ctx.Writeresult.Header().Set("Access-Control-Allow-Origin", "*")
 	id, ok := ctx.Params.Get("id")

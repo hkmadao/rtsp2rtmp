@@ -20,6 +20,20 @@ func ConvertPOToUser(po user_po.UserPO) (user entity.User, err error) {
 	return
 }
 
+func ConvertPOListToUser(poes []user_po.UserPO) ([]entity.User, error) {
+	users := make([]entity.User, len(poes))
+	for i, po := range poes {
+		user, err_convert := ConvertPOToUser(po)
+		if err_convert != nil {
+			logs.Error("ConvertPOListToUser : %v", err_convert)
+			err := fmt.Errorf("ConvertPOListToUser : %v", err_convert)
+			return nil, err
+		}
+		users[i] = user
+	}
+	return users, nil
+}
+
 func ConvertUserToVO(user entity.User) (vo user_vo.UserVO, err error) {
 	vo = user_vo.UserVO{}
 	err = common.EntityToVO(user, &vo)

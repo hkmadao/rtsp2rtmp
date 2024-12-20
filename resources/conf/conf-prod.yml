@@ -1,9 +1,6 @@
 server:
     use-ffmpeg: false 
     security: true
-    user:
-        name: admin
-        password: admin
     rtmp:
         port: 1936
     http:

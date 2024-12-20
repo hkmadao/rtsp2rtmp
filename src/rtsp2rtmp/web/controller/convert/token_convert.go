@@ -20,6 +20,20 @@ func ConvertPOToToken(po token_po.TokenPO) (token entity.Token, err error) {
 	return
 }
 
+func ConvertPOListToToken(poes []token_po.TokenPO) ([]entity.Token, error) {
+	tokens := make([]entity.Token, len(poes))
+	for i, po := range poes {
+		token, err_convert := ConvertPOToToken(po)
+		if err_convert != nil {
+			logs.Error("ConvertPOListToToken : %v", err_convert)
+			err := fmt.Errorf("ConvertPOListToToken : %v", err_convert)
+			return nil, err
+		}
+		tokens[i] = token
+	}
+	return tokens, nil
+}
+
 func ConvertTokenToVO(token entity.Token) (vo token_vo.TokenVO, err error) {
 	vo = token_vo.TokenVO{}
 	err = common.EntityToVO(token, &vo)

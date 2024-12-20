@@ -44,6 +44,19 @@ func UserDelete(e entity.User) (i int64, err error) {
 	return i, nil
 }
 
+func UserBatchDelete(es []entity.User) (i int64, err error) {
+	o := orm.NewOrm()
+	for _, e := range es {
+		_, err = o.Delete(&e)
+		if err != nil {
+			logs.Error("delete error : %v", err)
+			return 0, err
+		}
+	}
+	i = int64(len(es))
+	return i, nil
+}
+
 func UserSelectById(id string) (model entity.User, err error) {
 	o := orm.NewOrm()
 	model = entity.User{ IdUser: id  }
