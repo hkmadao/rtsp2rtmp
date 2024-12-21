@@ -82,7 +82,7 @@ func UserUpdate(ctx *gin.Context) {
 
 	var id = user.IdUser
 
-	_, err = base_service.UserSelectById(id)
+	userById, err := base_service.UserSelectById(id)
 	if err != nil {
 		logs.Error("query by id error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -90,6 +90,7 @@ func UserUpdate(ctx *gin.Context) {
 		return
 	}
 
+	user.UserPwd = userById.UserPwd
 	_, err = base_service.UserUpdateById(user)
 	if err != nil {
 		logs.Error("insert error : %v", err)

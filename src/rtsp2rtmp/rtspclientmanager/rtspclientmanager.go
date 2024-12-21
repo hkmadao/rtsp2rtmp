@@ -99,7 +99,7 @@ func (s *RtspClientManager) startConnections() {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
 				continue
 			}
-			if camera.Enabled != true {
+			if !camera.Enabled {
 				continue
 			}
 			go s.connRtsp(camera.Code)
@@ -127,7 +127,7 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
 	}
-	if c.Enabled != true {
+	if c.Enabled {
 		logs.Error("camera [%s] disabled : %v", code)
 		return
 	}
@@ -142,8 +142,8 @@ func (s *RtspClientManager) connRtsp(code string) {
 	session, err := rtspv2.Dial(rtspClientOptions)
 	if err != nil {
 		logs.Error("camera [%s] conn : %v", c.Code, err)
-		c.OnlineStatus = false
-		if c.OnlineStatus == true {
+		if c.OnlineStatus {
+			c.OnlineStatus = false
 			base_service.CameraUpdateById(c)
 		}
 		return

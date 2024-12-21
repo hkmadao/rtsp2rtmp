@@ -3,6 +3,7 @@ package ext
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
@@ -30,7 +31,7 @@ func ChangePassword(ctx *gin.Context) {
 	}
 	if modifyPwdParam.Password == "" {
 		logs.Error("new password is empty")
-		result := common.ErrorResult(fmt.Sprintf("new password is empty"))
+		result := common.ErrorResult("new password is empty")
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
@@ -43,19 +44,13 @@ func ChangePassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	if err != nil {
-		logs.Error("query by id error : %v", err)
-		result := common.ErrorResult("internal error")
-		ctx.JSON(http.StatusOK, result)
-		return
-	}
 	security, err := config.Bool("server.security")
 	if err != nil {
 		logs.Error("get server security error: %v. \n use default true", err)
 		security = true
 	}
 	if security {
-		if utils.Md5(modifyPwdParam.OldPassword) != user.UserPwd {
+		if strings.ToUpper(utils.Md5(strings.ToUpper(modifyPwdParam.OldPassword))) != user.UserPwd {
 			logs.Error("userName : %s , password error", user.Account)
 			result := common.ErrorResult("old password error")
 			ctx.JSON(http.StatusOK, result)
@@ -63,7 +58,7 @@ func ChangePassword(ctx *gin.Context) {
 		}
 	}
 
-	newPwd := utils.Md5(modifyPwdParam.Password)
+	newPwd := strings.ToUpper(utils.Md5(strings.ToUpper(modifyPwdParam.Password)))
 	user.UserPwd = newPwd
 	_, err = base_service.UserUpdateById(user)
 	if err != nil {

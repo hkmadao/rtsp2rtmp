@@ -31,7 +31,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 	userNameParam := params["username"].(string)
-	passwordParam := params["password"].(string)
+	passwordParam := strings.ToUpper(params["password"].(string))
 	if userNameParam == "" || passwordParam == "" {
 		logs.Error("username or passowrd is empty")
 		result := common.ErrorResult("username or passowrd is empty")
@@ -53,7 +53,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 	password := user.UserPwd
-	if utils.Md5(passwordParam) != password {
+	if strings.ToUpper(utils.Md5(passwordParam)) != password {
 		logs.Error("userName : %s , password error", user.Account)
 		result := common.ErrorResult("userName or password error")
 		ctx.JSON(http.StatusOK, result)

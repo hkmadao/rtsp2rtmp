@@ -42,7 +42,7 @@ func ConvertUserToVO(user entity.User) (vo user_vo.UserVO, err error) {
 		err = fmt.Errorf("convertUserToVO : %v", err)
 		return
 	}
-
+	vo.UserPwd = ""
 	return
 }
 
