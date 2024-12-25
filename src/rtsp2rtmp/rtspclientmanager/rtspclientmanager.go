@@ -127,8 +127,8 @@ func (s *RtspClientManager) connRtsp(code string) {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
 	}
-	if c.Enabled {
-		logs.Error("camera [%s] disabled : %v", code)
+	if !c.Enabled {
+		logs.Error("camera [%s] disabled", code)
 		return
 	}
 	logs.Info(c.Code, "connect", c.RtspUrl)

@@ -150,8 +150,8 @@ func (ffmpegManager *FFmpegManager) connRtsp(code string) {
 		logs.Error("find camera [%s] error : %v", code, err)
 		return
 	}
-	if camera.Enabled != true {
-		logs.Error("camera [%s] disabled : %v", code)
+	if !camera.Enabled {
+		logs.Error("camera [%s] disabled", code)
 		return
 	}
 	rtmpPort, err := config.Int("server.rtmp.port")
