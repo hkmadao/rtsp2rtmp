@@ -135,6 +135,7 @@ func TokenValidate() gin.HandlerFunc {
 			return
 		}
 		if ctx.Request.URL.Path == "/login" || strings.HasPrefix(ctx.Request.URL.Path, "/live/") ||
+			strings.HasPrefix(ctx.Request.URL.Path, "/vod/") ||
 			strings.HasPrefix(ctx.Request.URL.Path, "/rtsp2rtmp") {
 			ctx.Next()
 			return
@@ -152,7 +153,7 @@ func TokenValidate() gin.HandlerFunc {
 		if err != nil {
 			logs.Error("find sysToken error : %v", err)
 			result := common.ErrorResult("token error")
-			ctx.JSON(http.StatusOK, result)
+			ctx.JSON(http.StatusUnauthorized, result)
 			ctx.Abort()
 			return
 		}

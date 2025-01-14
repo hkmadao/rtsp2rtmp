@@ -4,15 +4,21 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
+
+var playerMap sync.Map
+var playerMap1 = make(map[string]uint)
 
 func HttpFlvPlay(ctx *gin.Context) {
 	defer func() {
@@ -86,4 +92,131 @@ func HttpFlvPlay(ctx *gin.Context) {
 	}
 	<-flvPlayerDone
 	logs.Info("player [%s] addr [%s] exit", code, ctx.Request.RemoteAddr)
+}
+
+func HttpFlvVODFileDuration(ctx *gin.Context) {
+	defer func() {
+		if result := recover(); result != nil {
+			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))
+		}
+	}()
+
+	fileName, ok := ctx.Params.Get("fileName")
+	if !ok {
+		logs.Error("get param fileName failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	if strings.Contains(fileName, "..") {
+		logs.Error("fileName: %s illegal", fileName)
+		http.Error(ctx.Writer, fmt.Sprintf("fileName: %s illegal", fileName), http.StatusBadRequest)
+		return
+	}
+
+	duration, err := fileflvreader.FlvDurationRead(fileName)
+	if err != nil {
+		logs.Error("file: %s get duration error", fileName)
+		http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	result := common.SuccessResultData(duration)
+	ctx.JSON(http.StatusOK, result)
+}
+
+func HttpFlvVODStart(ctx *gin.Context) {
+	defer func() {
+		if result := recover(); result != nil {
+			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))
+		}
+	}()
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.Writer.Header().Set("Connection", "keep-alive")
+	fileName, ok := ctx.Params.Get("fileName")
+	if !ok {
+		logs.Error("get param fileName failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	playerId := ctx.Query("playerId")
+	if playerId == "" {
+		logs.Error("get param playerId failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	if strings.Contains(fileName, "..") {
+		logs.Error("fileName: %s illegal", fileName)
+		http.Error(ctx.Writer, fmt.Sprintf("fileName: %s illegal", fileName), http.StatusBadRequest)
+		return
+	}
+
+	seekSecond := ctx.Query("seekSecond")
+	if seekSecond == "" {
+		logs.Error("get param seekSecond failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+	seekSecondUint, err := strconv.ParseUint(seekSecond, 10, 64)
+	if err != nil {
+		logs.Error("get param seekSecond failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	ffr := fileflvreader.NewFileFlvReader(seekSecondUint, ctx.Writer, fileName)
+	_, ok = playerMap.Load(playerId)
+	if ok {
+		logs.Error("playerId: %s exists", playerId)
+		http.Error(ctx.Writer, fmt.Sprintf("playerId: %s exists", playerId), http.StatusBadRequest)
+		return
+	}
+	playerMap.Store(playerId, ffr)
+	<-ffr.GetDone()
+	playerMap.Delete(playerId)
+	logs.Info("vod player [%s] addr [%s] exit", fileName, ctx.Request.RemoteAddr)
+}
+
+func HttpFlvVODFetch(ctx *gin.Context) {
+	defer func() {
+		if result := recover(); result != nil {
+			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))
+		}
+	}()
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.Writer.Header().Set("Connection", "keep-alive")
+
+	playerId := ctx.Query("playerId")
+	if playerId == "" {
+		logs.Error("get param playerId failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	seekSecond := ctx.Query("seekSecond")
+	if playerId == "" {
+		logs.Error("get param seekSecond failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+	seekSecondUint, err := strconv.ParseUint(seekSecond, 10, 64)
+	if err != nil {
+		logs.Error("get param seekSecond failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	value, ok := playerMap.Load(playerId)
+	if !ok {
+		logs.Error("playerId: %s not exists", playerId)
+		http.Error(ctx.Writer, fmt.Sprintf("playerId: %s not exists", playerId), http.StatusBadRequest)
+		return
+	}
+	loadFfr := (value.(*fileflvreader.FileFlvReader))
+	loadFfr.SetSeekSecond(seekSecondUint)
+
+	logs.Info("vod player [%s] fetch data, addr [%s]", playerId, ctx.Request.RemoteAddr)
+	result := common.SuccessResultMsg("fetch sccess")
+	ctx.JSON(http.StatusOK, result)
 }

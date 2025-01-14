@@ -12,7 +12,14 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
+	ext_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/ext"
 )
+
+var codeStream = make(chan string)
+
+func CodeStream() <-chan string {
+	return codeStream
+}
 
 func CameraEnabled(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -204,8 +211,30 @@ func CameraPlayAuthCodeReset(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-var codeStream = make(chan string)
+func CameraGetRecordFiles(ctx *gin.Context) {
+	idCamera := ctx.Query("idCamera")
+	if idCamera == "" {
+		logs.Error("get param idCamera failed")
+		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		return
+	}
 
-func CodeStream() <-chan string {
-	return codeStream
+	camera, err := base_service.CameraSelectById(idCamera)
+	if err != nil {
+		logs.Error("query camera error : %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+
+	_, err = ext_service.CameraFindRecordFiles(camera)
+	if err != nil {
+		logs.Error("CameraGetRecordFiles error : %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+
+	result := common.SuccessResultWithMsg("succss", camera)
+	ctx.JSON(http.StatusOK, result)
 }
