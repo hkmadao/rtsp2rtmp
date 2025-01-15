@@ -2,15 +2,15 @@ package ext
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
+	ext_vo "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/vo/ext/camera_record"
 )
 
-func CameraFindRecordFiles(e entity.Camera) (i int64, err error) {
+func CameraFindRecordFiles() (fileInfoList []ext_vo.RecordFileInfo, err error) {
 	fileFlvPath, err := getFileFlvPath()
 	if err != nil {
 		return
@@ -20,18 +20,28 @@ func CameraFindRecordFiles(e entity.Camera) (i int64, err error) {
 	if err != nil {
 		return
 	}
-	infos := make([]fs.FileInfo, 0, len(entries))
+	fileInfoList = make([]ext_vo.RecordFileInfo, 0)
 	for _, entry := range entries {
 		info, errEntry := entry.Info()
 		if errEntry != nil {
 			err = errEntry
 			return
 		}
-		if !info.IsDir() {
-			infos = append(infos, info)
+		if info.IsDir() {
+			continue
 		}
+		fileName := info.Name()
+		if !strings.HasSuffix(fileName, ".flv") {
+			continue
+		}
+		fileInfo := ext_vo.RecordFileInfo{
+			FileName: fileName,
+			ModTime:  info.ModTime(),
+			Size:     info.Size(),
+		}
+		fileInfoList = append(fileInfoList, fileInfo)
 	}
-	fmt.Printf("%v\n", infos)
+	fmt.Printf("%v\n", fileInfoList)
 	return
 }
 

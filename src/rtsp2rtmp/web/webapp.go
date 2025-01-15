@@ -64,7 +64,7 @@ func (w *web) webRun() {
 	router.GET("/vod/getDuration/:fileName", ext_controller.HttpFlvVODFileDuration)
 	router.GET("/vod/start/:fileName", ext_controller.HttpFlvVODStart)
 	router.GET("/vod/fetch/:fileName", ext_controller.HttpFlvVODFetch)
-	router.GET("/camera/getRecordFiles", ext_controller.CameraGetRecordFiles)
+	router.GET("/vod/getFileList", ext_controller.CameraGetRecordFiles)
 	// user
 	router.POST("/user/updatePw", ext_controller.ChangePassword)
 	router.POST("/user/add", base_controller.UserAdd)
@@ -109,6 +109,17 @@ func (w *web) webRun() {
 	router.POST("/cameraShare/aqPage", base_controller.CameraShareAqPage)
 	router.POST("/cameraShare/enabled", ext_controller.CameraShareEnabled)
 	router.POST("/cameraShare/playAuthCodeReset", ext_controller.CameraSharePlayAuthCodeReset)
+
+	// camerarecord
+	router.POST("/cameraRecord/remove", base_controller.CameraRecordRemove)
+	router.POST("/cameraRecord/batchRemove", base_controller.CameraRecordBatchRemove)
+	router.GET("/cameraRecord/getById/:id", base_controller.CameraRecordGetById)
+	router.GET("/cameraRecord/getByIds", base_controller.CameraRecordGetByIds)
+	router.POST("/cameraRecord/aq", base_controller.CameraRecordAq)
+	router.POST("/cameraRecord/aqPage", base_controller.CameraRecordAqPage)
+	router.GET("/cameraRecord/getDuration", ext_controller.CameraRecordFileDuration)
+	router.GET("/cameraRecord/start", ext_controller.CameraRecordFilePlay)
+	router.GET("/cameraRecord/fetch", ext_controller.CameraRecordFileFetch)
 
 	staticPath, err := config.String("server.http.static.path")
 	if err != nil {

@@ -128,10 +128,10 @@ func CameraSaveVideoChange(ctx *gin.Context) {
 		return
 	}
 	switch {
-	case q.SaveVideo != true:
+	case !q.SaveVideo:
 		logs.Info("camera [%s] stop save video", q.Code)
 		flvadmin.GetSingleFileFlvAdmin().StopWrite(q.Code)
-	case q.SaveVideo == true:
+	case q.SaveVideo:
 		flvadmin.GetSingleFileFlvAdmin().StartWrite(q.Code)
 		logs.Info("camera [%s] start save video", q.Code)
 	}
@@ -212,22 +212,22 @@ func CameraPlayAuthCodeReset(ctx *gin.Context) {
 }
 
 func CameraGetRecordFiles(ctx *gin.Context) {
-	idCamera := ctx.Query("idCamera")
-	if idCamera == "" {
-		logs.Error("get param idCamera failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
-		return
-	}
+	// idCamera := ctx.Query("idCamera")
+	// if idCamera == "" {
+	// 	logs.Error("get param idCamera failed")
+	// 	http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+	// 	return
+	// }
 
-	camera, err := base_service.CameraSelectById(idCamera)
-	if err != nil {
-		logs.Error("query camera error : %v", err)
-		result := common.ErrorResult("internal error")
-		ctx.JSON(http.StatusOK, result)
-		return
-	}
+	// camera, err := base_service.CameraSelectById(idCamera)
+	// if err != nil {
+	// 	logs.Error("query camera error : %v", err)
+	// 	result := common.ErrorResult("internal error")
+	// 	ctx.JSON(http.StatusOK, result)
+	// 	return
+	// }
 
-	_, err = ext_service.CameraFindRecordFiles(camera)
+	fileInfoList, err := ext_service.CameraFindRecordFiles()
 	if err != nil {
 		logs.Error("CameraGetRecordFiles error : %v", err)
 		result := common.ErrorResult("internal error")
@@ -235,6 +235,6 @@ func CameraGetRecordFiles(ctx *gin.Context) {
 		return
 	}
 
-	result := common.SuccessResultWithMsg("succss", camera)
+	result := common.SuccessResultWithMsg("succss", fileInfoList)
 	ctx.JSON(http.StatusOK, result)
 }

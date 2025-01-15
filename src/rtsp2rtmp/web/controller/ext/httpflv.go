@@ -18,7 +18,6 @@ import (
 )
 
 var playerMap sync.Map
-var playerMap1 = make(map[string]uint)
 
 func HttpFlvPlay(ctx *gin.Context) {
 	defer func() {
@@ -73,7 +72,7 @@ func HttpFlvPlay(ctx *gin.Context) {
 	}
 	if method == "permanent" && authCode != camera.PlayAuthCode {
 		logs.Error("AuthCodePermanent error : %s", authCode)
-		result := common.ErrorResult(fmt.Sprintf("auth error"))
+		result := common.ErrorResult("auth error")
 		ctx.JSON(http.StatusBadRequest, result)
 		return
 	}
@@ -114,7 +113,7 @@ func HttpFlvVODFileDuration(ctx *gin.Context) {
 		return
 	}
 
-	duration, err := fileflvreader.FlvDurationRead(fileName)
+	duration, err := fileflvreader.FlvDurationReadUntilErr(fileName)
 	if err != nil {
 		logs.Error("file: %s get duration error", fileName)
 		http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)

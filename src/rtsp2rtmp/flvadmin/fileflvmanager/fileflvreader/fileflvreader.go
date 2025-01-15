@@ -26,6 +26,8 @@ type FileFlvReader struct {
 	httpWrite    *MyHttpWriter
 	seekSecond   uint64 //uint second
 	fgStart      bool
+	fgOffSetTime bool
+	offSetTime   time.Duration // realTime = pkt.Time - offSetTime, offsetTime from is first pkt.Time
 }
 
 func (ffw *FileFlvReader) GetDone() <-chan int {
@@ -57,13 +59,15 @@ func NewFileFlvReader(
 ) *FileFlvReader {
 	myHttpWriter := newMyHttpWriter(writer)
 	ffw := &FileFlvReader{
-		fgDoneClose: false,
-		done:        make(chan int),
-		httpWrite:   myHttpWriter,
-		fileName:    fileName,
-		codecs:      make([]av.CodecData, 0),
-		seekSecond:  seekSecond,
-		fgStart:     false,
+		fgDoneClose:  false,
+		done:         make(chan int),
+		httpWrite:    myHttpWriter,
+		fileName:     fileName,
+		codecs:       make([]av.CodecData, 0),
+		seekSecond:   seekSecond,
+		fgStart:      false,
+		fgOffSetTime: false,
+		offSetTime:   0,
 	}
 	go ffw.flvRead()
 	return ffw
@@ -113,7 +117,7 @@ func (ffw *FileFlvReader) Read(p []byte) (n int, err error) {
 }
 
 func (ffw *FileFlvReader) openFlvFile() error {
-	fullFileName := getFileFlvPath() + "/" + ffw.fileName + ".flv"
+	fullFileName := getFileFlvPath() + "/" + ffw.fileName
 	fd, err := os.OpenFile(fullFileName, os.O_RDWR, 0644)
 	if err != nil {
 		logs.Error("open file: %s error : %v", fullFileName, err)
@@ -162,6 +166,10 @@ func (ffw *FileFlvReader) flvRead() {
 				logs.Error("read file %s ReadPacket error : %v", ffw.fileName, err)
 				break
 			}
+			if !ffw.fgOffSetTime {
+				ffw.fgOffSetTime = true
+				ffw.offSetTime = pkt.Time
+			}
 			if pkt.Time >= time.Duration(ffw.seekSecond)*time.Second {
 				break
 			}
@@ -177,20 +185,24 @@ Loop:
 			logs.Error("read file %s ReadPacket error : %v", ffw.fileName, err)
 			break
 		}
-		if !ffw.fgStart && pkt.IsKeyFrame {
-			continue
+		if !ffw.fgOffSetTime {
+			ffw.fgOffSetTime = true
+			ffw.offSetTime = pkt.Time
 		}
-		ffw.fgStart = true
+		if !ffw.fgStart {
+			if !pkt.IsKeyFrame {
+				continue
+			}
+			ffw.fgStart = true
+		}
 		err = httpWriteMuxer.WritePacket(pkt)
 		if err != nil {
 			logs.Error("read file %s WritePacket error : %v", ffw.fileName, err)
 			break
 		}
-		// fmt.Printf("pkt.Time=%s\n", pkt.Time)
+
 		sinceTime := time.Since(timeStart) + time.Duration(ffw.seekSecond)*time.Second
-		// fmt.Printf("sinceTime=%s\n", sinceTime)
-		// fmt.Printf("result=%t\n", pkt.Time > (sinceTime+60*time.Second))
-		if pkt.Time > (sinceTime + 3*time.Minute) {
+		if (pkt.Time - ffw.offSetTime) > (sinceTime + 3*time.Minute) {
 			select {
 			case <-ffw.done:
 				break Loop
@@ -234,8 +246,8 @@ func (w *MyHttpWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-func FlvDurationRead(fileName string) (n int, err error) {
-	fullFileName := getFileFlvPath() + "/" + fileName + ".flv"
+func FlvDurationReadUntilErr(fileName string) (n int, err error) {
+	fullFileName := getFileFlvPath() + "/" + fileName
 	fd, err := os.OpenFile(fullFileName, os.O_RDWR, 0644)
 	if err != nil {
 		logs.Error("open file: %s error : %v", fullFileName, err)
@@ -253,8 +265,7 @@ func FlvDurationRead(fileName string) (n int, err error) {
 			if readErr == io.EOF {
 				break
 			}
-			logs.Error("read file %s ReadPacket error : %v", fileName, err)
-			err = readErr
+			logs.Error("read file %s ReadPacket error : %v", fileName, readErr)
 			break
 		}
 

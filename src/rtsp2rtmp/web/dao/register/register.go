@@ -42,6 +42,7 @@ func init() {
 func init() {
 	// 需要在init中注册定义的model
 	orm.RegisterModel(new(entity.Camera))
+	orm.RegisterModel(new(entity.CameraRecord))
 	orm.RegisterModel(new(entity.CameraShare))
 	orm.RegisterModelWithPrefix("sys_", new(entity.User))
 	orm.RegisterModelWithPrefix("sys_", new(entity.Token))
@@ -51,6 +52,7 @@ var descMap = make(map[string]*common.EntityDesc)
 
 func init() {
 	descMap["Camera"] = desc.GetCameraDesc()
+	descMap["CameraRecord"] = desc.GetCameraRecordDesc()
 	descMap["CameraShare"] = desc.GetCameraShareDesc()
 	descMap["User"] = desc.GetUserDesc()
 	descMap["Token"] = desc.GetTokenDesc()
