@@ -63,7 +63,7 @@ func (w *web) webRun() {
 	router.GET("/live/:method/:code/:authCode.flv", ext_controller.HttpFlvPlay)
 	router.GET("/vod/getDuration/:fileName", ext_controller.HttpFlvVODFileDuration)
 	router.GET("/vod/start/:fileName", ext_controller.HttpFlvVODStart)
-	router.GET("/vod/fetch/:fileName", ext_controller.HttpFlvVODFetch)
+	router.GET("/vod/fetch", ext_controller.HttpFlvVODFetch)
 	router.GET("/vod/getFileList", ext_controller.CameraGetRecordFiles)
 	// user
 	router.POST("/user/updatePw", ext_controller.ChangePassword)

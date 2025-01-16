@@ -202,7 +202,7 @@ Loop:
 		}
 
 		sinceTime := time.Since(timeStart) + time.Duration(ffw.seekSecond)*time.Second
-		if (pkt.Time - ffw.offSetTime) > (sinceTime + 3*time.Minute) {
+		if (pkt.Time - ffw.offSetTime) > (sinceTime + 5*time.Minute) {
 			select {
 			case <-ffw.done:
 				break Loop
@@ -259,6 +259,8 @@ func FlvDurationReadUntilErr(fileName string) (n int, err error) {
 	demuxer := flv.NewDemuxer(fd)
 	totalTime := time.Duration(0)
 	demuxer.Streams()
+	fgStart := false
+	offSetTime := time.Duration(0)
 	for {
 		pkt, readErr := demuxer.ReadPacket()
 		if readErr != nil {
@@ -268,9 +270,14 @@ func FlvDurationReadUntilErr(fileName string) (n int, err error) {
 			logs.Error("read file %s ReadPacket error : %v", fileName, readErr)
 			break
 		}
+		if !fgStart {
+			fgStart = true
+			offSetTime = pkt.Time
+		}
 
 		totalTime = pkt.Time
 	}
+	totalTime = totalTime - offSetTime
 	n = int(totalTime / time.Millisecond)
 	return
 }
