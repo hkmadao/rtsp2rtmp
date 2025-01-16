@@ -170,7 +170,7 @@ func (ffw *FileFlvReader) flvRead() {
 				ffw.fgOffSetTime = true
 				ffw.offSetTime = pkt.Time
 			}
-			if pkt.Time >= time.Duration(ffw.seekSecond)*time.Second {
+			if (pkt.Time - ffw.offSetTime) >= time.Duration(ffw.seekSecond)*time.Second {
 				break
 			}
 		}
