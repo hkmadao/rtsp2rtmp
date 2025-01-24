@@ -102,8 +102,8 @@ func HttpFlvVODFileDuration(ctx *gin.Context) {
 
 	fileName, ok := ctx.Params.Get("fileName")
 	if !ok {
-		logs.Error("get param fileName failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("path param fileName is rquired")
+		http.Error(ctx.Writer, "path param fileName is rquired", http.StatusBadRequest)
 		return
 	}
 
@@ -133,15 +133,15 @@ func HttpFlvVODStart(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Connection", "keep-alive")
 	fileName, ok := ctx.Params.Get("fileName")
 	if !ok {
-		logs.Error("get param fileName failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("path param fileName is rquired")
+		http.Error(ctx.Writer, "path param fileName is rquired", http.StatusBadRequest)
 		return
 	}
 
 	playerId := ctx.Query("playerId")
 	if playerId == "" {
-		logs.Error("get param playerId failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param playerId is rquired")
+		http.Error(ctx.Writer, "query param playerId is rquired", http.StatusBadRequest)
 		return
 	}
 
@@ -153,14 +153,14 @@ func HttpFlvVODStart(ctx *gin.Context) {
 
 	seekSecond := ctx.Query("seekSecond")
 	if seekSecond == "" {
-		logs.Error("get param seekSecond failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param seekSecond is rquired")
+		http.Error(ctx.Writer, "query param seekSecond is rquired", http.StatusBadRequest)
 		return
 	}
 	seekSecondUint, err := strconv.ParseUint(seekSecond, 10, 64)
 	if err != nil {
-		logs.Error("get param seekSecond failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param seekSecond need uint")
+		http.Error(ctx.Writer, "query param seekSecond need uint", http.StatusBadRequest)
 		return
 	}
 
@@ -188,28 +188,29 @@ func HttpFlvVODFetch(ctx *gin.Context) {
 
 	playerId := ctx.Query("playerId")
 	if playerId == "" {
-		logs.Error("get param playerId failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param playerId is rquired")
+		http.Error(ctx.Writer, "query param playerId is rquired", http.StatusBadRequest)
 		return
 	}
 
 	seekSecond := ctx.Query("seekSecond")
 	if playerId == "" {
-		logs.Error("get param seekSecond failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param seekSecond is rquired")
+		http.Error(ctx.Writer, "query param seekSecond is rquired", http.StatusBadRequest)
 		return
 	}
 	seekSecondUint, err := strconv.ParseUint(seekSecond, 10, 64)
 	if err != nil {
-		logs.Error("get param seekSecond failed")
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+		logs.Error("query param seekSecond need uint")
+		http.Error(ctx.Writer, "query param seekSecond need uint", http.StatusBadRequest)
 		return
 	}
 
 	value, ok := playerMap.Load(playerId)
 	if !ok {
-		logs.Error("playerId: %s not exists", playerId)
-		http.Error(ctx.Writer, fmt.Sprintf("playerId: %s not exists", playerId), http.StatusBadRequest)
+		logs.Error("playerId: %s not exists or complate", playerId)
+		result := common.SuccessResultMsg(fmt.Sprintf("playerId: %s not exists or complate, skip this request", playerId))
+		ctx.JSON(http.StatusOK, result)
 		return
 	}
 	loadFfr := (value.(*fileflvreader.FileFlvReader))

@@ -117,8 +117,8 @@ func (w *web) webRun() {
 	router.GET("/cameraRecord/getByIds", base_controller.CameraRecordGetByIds)
 	router.POST("/cameraRecord/aq", base_controller.CameraRecordAq)
 	router.POST("/cameraRecord/aqPage", base_controller.CameraRecordAqPage)
-	router.GET("/cameraRecord/getDuration", ext_controller.CameraRecordFileDuration)
-	router.GET("/cameraRecord/start", ext_controller.CameraRecordFilePlay)
+	router.GET("/cameraRecord/getDuration/:idCameraRecord", ext_controller.CameraRecordFileDuration)
+	router.GET("/cameraRecord/start/:idCameraRecord", ext_controller.CameraRecordFilePlay)
 	router.GET("/cameraRecord/fetch", ext_controller.CameraRecordFileFetch)
 
 	staticPath, err := config.String("server.http.static.path")

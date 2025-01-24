@@ -19,4 +19,11 @@ server:
         show-sql: false
     token:
         duration: 1440
+    remote:
+        server-ip: 127.0.0.1
+        port: 8089
+        client-id: demo
+        sign-secret: 123456
+        secret: 123456
+    
         

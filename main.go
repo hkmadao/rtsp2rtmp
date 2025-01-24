@@ -8,6 +8,7 @@ import (
 	_ "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/conf" // 必须先导入配置文件
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/ffmpegmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient"
 
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
@@ -35,6 +36,7 @@ func main() {
 	}
 	task.GetSingleTask().StartTask()
 	web.GetSingleWeb().StartWeb()
+	tcpclient.StartCommandReceiveServer()
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
