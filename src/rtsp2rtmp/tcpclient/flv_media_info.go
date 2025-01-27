@@ -15,7 +15,8 @@ type FlvFileMediaInfoParam struct {
 	IdCameraRecord string `json:"idCameraRecord"`
 }
 
-func flvFileMediaInfo(paramStr string) {
+func flvFileMediaInfo(commandMessage CommandMessage) {
+	paramStr := commandMessage.Param
 	param := FlvFileMediaInfoParam{}
 	err := json.Unmarshal([]byte(paramStr), &param)
 	if err != nil {
@@ -23,7 +24,7 @@ func flvFileMediaInfo(paramStr string) {
 		return
 	}
 	idCameraRecord := param.IdCameraRecord
-	conn, err := connectAndRegister("flvFileMediaInfo")
+	conn, err := connectAndRegister("flvFileMediaInfo", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFileMediaInfo connect to server error: %v", err)
 		return

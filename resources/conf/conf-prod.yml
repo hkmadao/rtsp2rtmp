@@ -21,9 +21,9 @@ server:
         duration: 1440
     remote:
         server-ip: 127.0.0.1
-        port: 8089
-        client-id: demo
-        sign-secret: 123456
-        secret: 123456
+        port: 9089
+        client-code: demo
+        sign-secret: A012345678901234
+        secret: A012345678901234
     
         

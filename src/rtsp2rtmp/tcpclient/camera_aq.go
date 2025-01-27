@@ -9,16 +9,17 @@ import (
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func cameraAq(paramStr string) {
+func cameraAq(commandMessage CommandMessage) {
+	paramStr := commandMessage.Param
 	condition := common.AqCondition{}
 	err := json.Unmarshal([]byte(paramStr), &condition)
 	if err != nil {
-		logs.Error("flvFileMediaInfo message format error: %v", err)
+		logs.Error("cameraAq message format error: %v", err)
 		return
 	}
-	conn, err := connectAndRegister("historyVideoPage")
+	conn, err := connectAndRegister("cameraAq", commandMessage.MessageId)
 	if err != nil {
-		logs.Error("historyVideoPage connect to server error: %v", err)
+		logs.Error("cameraAq connect to server error: %v", err)
 		return
 	}
 

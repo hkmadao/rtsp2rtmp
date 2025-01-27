@@ -40,11 +40,16 @@ func Float64ToByteBigEndian(float float64) []byte {
 func Int32ToByteBigEndian(number int32) []byte {
 	bytes := make([]byte, 4)
 	bytes[0] = byte(number >> (3 * 8))
-	bytes[0] = byte(number >> (2 * 8))
-	bytes[0] = byte(number >> (1 * 8))
-	bytes[0] = byte(number)
+	bytes[1] = byte(number >> (2 * 8))
+	bytes[2] = byte(number >> (1 * 8))
+	bytes[3] = byte(number)
 
 	return bytes
+}
+
+func BigEndianToUint32(bytes []byte) (dataLen uint32) {
+	dataLen = binary.BigEndian.Uint32(bytes)
+	return
 }
 
 func ByteToFloat64(bytes []byte) float64 {

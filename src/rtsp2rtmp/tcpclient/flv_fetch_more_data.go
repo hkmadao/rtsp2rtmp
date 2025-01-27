@@ -14,14 +14,15 @@ type FetchMoreDataParam struct {
 	SeekSecond uint64 `json:"seekSecond"`
 }
 
-func flvFetchMoreData(paramStr string) {
+func flvFetchMoreData(commandMessage CommandMessage) {
+	paramStr := commandMessage.Param
 	param := FetchMoreDataParam{}
 	err := json.Unmarshal([]byte(paramStr), &param)
 	if err != nil {
-		logs.Error("flvPlay message format error: %v", err)
+		logs.Error("flvFetchMoreData message format error: %v", err)
 		return
 	}
-	conn, err := connectAndRegister("flvFetchMoreData")
+	conn, err := connectAndRegister("flvFetchMoreData", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFetchMoreData connect to server error: %v", err)
 		return

@@ -51,16 +51,17 @@ func (flvPush FlvPush) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func flvPlay(paramStr string) {
+func flvPlay(commandMessage CommandMessage) {
+	paramStr := commandMessage.Param
 	playParam := PlayParam{}
 	err := json.Unmarshal([]byte(paramStr), &playParam)
 	if err != nil {
 		logs.Error("flvPlay message format error: %v", err)
 		return
 	}
-	conn, err := connectAndRegister("flvFileMediaInfo")
+	conn, err := connectAndRegister("flvPlay", commandMessage.MessageId)
 	if err != nil {
-		logs.Error("flvFileMediaInfo connect to server error: %v", err)
+		logs.Error("flvPlay connect to server error: %v", err)
 		return
 	}
 	camera_record, err := base_service.CameraRecordSelectById(playParam.IdCameraRecord)
@@ -79,7 +80,9 @@ func flvPlay(paramStr string) {
 		fileName = camera_record.TempFileName
 	}
 
-	ffr := fileflvreader.NewFileFlvReader(playParam.SeekSecond, conn, fileName)
+	flvPush := FlvPush{conn: conn}
+
+	ffr := fileflvreader.NewFileFlvReader(playParam.SeekSecond, flvPush, fileName)
 	_, ok := playerMap.Load(playParam.PlayerId)
 	if ok {
 		logs.Error("playerId: %s exists", playParam.PlayerId)

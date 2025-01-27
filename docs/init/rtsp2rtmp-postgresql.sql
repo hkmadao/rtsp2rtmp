@@ -123,3 +123,38 @@ COMMENT ON COLUMN public.camera_share.created IS '创建时间';
 COMMENT ON COLUMN public.camera_share.start_time IS '开始时间';
 COMMENT ON COLUMN public.camera_share.deadline IS '结束时间';
 COMMENT ON COLUMN public.camera_share.camera_id IS '摄像头id';
+
+-- public.camera_record definition
+
+-- Drop table
+
+-- DROP TABLE camera_record;
+
+CREATE TABLE camera_record (
+	id_camera_record varchar(255) NOT NULL,
+	created timestamp NULL, -- 创建时间
+	temp_file_name varchar(255) NULL, -- 临时文件名称
+	fg_temp bool NULL, -- 临时文件标志
+	file_name varchar(255) NULL, -- 文件名称
+	fg_remove bool NULL, -- 文件删除标志
+	duration int4 NULL, -- 文件时长: 单位：毫秒
+	start_time timestamp NULL, -- 开始时间
+	end_time timestamp NULL, -- 结束时间
+	id_camera varchar(255) NOT NULL, -- 摄像头主属性
+	has_audio bool NULL, -- 是否有音频
+	CONSTRAINT pk_camera_record PRIMARY KEY (id_camera_record)
+);
+COMMENT ON TABLE public.camera_record IS '摄像头记录';
+
+-- Column comments
+
+COMMENT ON COLUMN public.camera_record.created IS '创建时间';
+COMMENT ON COLUMN public.camera_record.temp_file_name IS '临时文件名称';
+COMMENT ON COLUMN public.camera_record.fg_temp IS '临时文件标志';
+COMMENT ON COLUMN public.camera_record.file_name IS '文件名称';
+COMMENT ON COLUMN public.camera_record.fg_remove IS '文件删除标志';
+COMMENT ON COLUMN public.camera_record.duration IS '文件时长: 单位：毫秒';
+COMMENT ON COLUMN public.camera_record.start_time IS '开始时间';
+COMMENT ON COLUMN public.camera_record.end_time IS '结束时间';
+COMMENT ON COLUMN public.camera_record.id_camera IS '摄像头主属性';
+COMMENT ON COLUMN public.camera_record.has_audio IS '是否有音频';

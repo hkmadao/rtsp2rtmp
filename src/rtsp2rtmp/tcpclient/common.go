@@ -17,22 +17,24 @@ type CommandMessage struct {
 	// "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
 	MessageType string `json:"messageType"`
 	Param       string `json:"param"`
+	MessageId   string `json:"messageId"`
 }
 
 // when connect to server, first send register packet to server
 type RegisterInfo struct {
-	ClientId string `json:"clientId"`
-	DateStr  string `json:"dateStr"`
-	Sign     string `json:"sign"`
+	ClientCode string `json:"clientCode"`
+	DateStr    string `json:"dateStr"`
+	Sign       string `json:"sign"`
 	// "keepChannel" "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
-	ConnType string `json:"connType"`
+	ConnType  string `json:"connType"`
+	MessageId string `json:"messageId"`
 }
 
-func newReisterInfo(connType string) (ri RegisterInfo, err error) {
+func newReisterInfo(connType string, messageId string) (ri RegisterInfo, err error) {
 	currentDateStr := time.Now().Format(time.RFC3339)
-	clientId, err := config.String("server.remote.client-id")
+	clientCode, err := config.String("server.remote.client-code")
 	if err != nil {
-		logs.Error("get remote client-id error: %v\n", err)
+		logs.Error("get remote client-code error: %v\n", err)
 		return
 	}
 	signSecret, err := config.String("server.remote.sign-secret")
@@ -40,7 +42,7 @@ func newReisterInfo(connType string) (ri RegisterInfo, err error) {
 		logs.Error("get remote sign-secret error: %v\n", err)
 		return
 	}
-	planText := fmt.Sprintf("cilentId=%s&dateStr=%s", clientId, currentDateStr)
+	planText := fmt.Sprintf("clientCode=%s&dateStr=%s", clientCode, currentDateStr)
 	signStr, err := utils.EncryptAES([]byte(signSecret), planText)
 	if err != nil {
 		err = fmt.Errorf("buildSign error: %v", err)
@@ -48,15 +50,16 @@ func newReisterInfo(connType string) (ri RegisterInfo, err error) {
 	}
 
 	ri = RegisterInfo{
-		ClientId: clientId,
-		ConnType: connType,
-		DateStr:  currentDateStr,
-		Sign:     signStr,
+		ClientCode: clientCode,
+		ConnType:   connType,
+		DateStr:    currentDateStr,
+		Sign:       signStr,
+		MessageId:  messageId,
 	}
 	return
 }
 
-func connectAndRegister(connType string) (conn net.Conn, err error) {
+func connectAndRegister(connType string, messageId string) (conn net.Conn, err error) {
 	serverIp, err := config.String("server.remote.server-ip")
 	if err != nil {
 		logs.Error("get remote server-ip error: %v. \n", err)
@@ -72,12 +75,9 @@ func connectAndRegister(connType string) (conn net.Conn, err error) {
 		logs.Error(err)
 		return
 	}
-	defer func() {
-		conn.Close()
-	}()
 
 	// register to server
-	ri, err := newReisterInfo(connType)
+	ri, err := newReisterInfo(connType, messageId)
 	if err != nil {
 		logs.Error(err)
 		return

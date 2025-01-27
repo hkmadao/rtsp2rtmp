@@ -11,14 +11,15 @@ import (
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func historyVideoPage(paramStr string) {
+func historyVideoPage(commandMessage CommandMessage) {
+	paramStr := commandMessage.Param
 	pageInfoInput := common.AqPageInfoInput{}
 	err := json.Unmarshal([]byte(paramStr), &pageInfoInput)
 	if err != nil {
-		logs.Error("flvFileMediaInfo message format error: %v", err)
+		logs.Error("historyVideoPage message format error: %v", err)
 		return
 	}
-	conn, err := connectAndRegister("historyVideoPage")
+	conn, err := connectAndRegister("historyVideoPage", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("historyVideoPage connect to server error: %v", err)
 		return

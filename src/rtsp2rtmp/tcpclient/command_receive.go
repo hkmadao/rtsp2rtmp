@@ -1,8 +1,6 @@
 package tcpclient
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"time"
 
@@ -15,13 +13,13 @@ func StartCommandReceiveServer() {
 	go func() {
 		for {
 			commandReceiveConnect()
-			<-time.NewTicker(1 * time.Minute).C
+			<-time.NewTicker(10 * time.Second).C
 		}
 	}()
 }
 
 func commandReceiveConnect() {
-	conn, err := connectAndRegister("keepChannel")
+	conn, err := connectAndRegister("keepChannel", "")
 	if err != nil {
 		logs.Error("keepChannel connect to server error: %v", err)
 		return
@@ -35,14 +33,8 @@ func commandReceiveConnect() {
 			logs.Error("read len error: %v", err)
 			break
 		}
-		var dataLen int32
-		buffer := bytes.NewBuffer(dataLenBytes)
-		err = binary.Read(buffer, binary.LittleEndian, &dataLen)
-		if err != nil {
-			logs.Error(err)
-			break
-		}
-		logs.Info("receive message dataLen: %d", dataLen)
+		dataLen := utils.BigEndianToUint32(dataLenBytes)
+
 		serverRepBytes := make([]byte, dataLen)
 		_, err = conn.Read(serverRepBytes)
 		if err != nil {
@@ -50,7 +42,7 @@ func commandReceiveConnect() {
 			break
 		}
 		secretCommandStr := string(serverRepBytes)
-		logs.Info("receive message: %s", secretCommandStr)
+
 		secretStr, err := config.String("server.remote.secret")
 		if err != nil {
 			logs.Error("get remote secret error: %v", err)
@@ -68,19 +60,24 @@ func commandReceiveConnect() {
 			continue
 		}
 
-		switch commandMessage.MessageType {
-		case "cameraAq":
-			cameraAq(commandMessage.Param)
-		case "historyVideoPage":
-			historyVideoPage(commandMessage.Param)
-		case "flvFileMediaInfo":
-			flvFileMediaInfo(commandMessage.Param)
-		case "flvPlay":
-			flvPlay(commandMessage.Param)
-		case "flvFetchMoreData":
-			flvFetchMoreData(commandMessage.Param)
-		default:
-			logs.Error("unsupport commandType: %s", commandMessage.MessageType)
-		}
+		// do response
+		go commandRes(commandMessage)
+	}
+}
+
+func commandRes(commandMessage CommandMessage) {
+	switch commandMessage.MessageType {
+	case "cameraAq":
+		cameraAq(commandMessage)
+	case "historyVideoPage":
+		historyVideoPage(commandMessage)
+	case "flvFileMediaInfo":
+		flvFileMediaInfo(commandMessage)
+	case "flvPlay":
+		flvPlay(commandMessage)
+	case "flvFetchMoreData":
+		flvFetchMoreData(commandMessage)
+	default:
+		logs.Error("unsupport commandType: %s", commandMessage.MessageType)
 	}
 }
