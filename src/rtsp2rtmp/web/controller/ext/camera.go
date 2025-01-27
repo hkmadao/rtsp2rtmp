@@ -212,21 +212,6 @@ func CameraPlayAuthCodeReset(ctx *gin.Context) {
 }
 
 func CameraGetRecordFiles(ctx *gin.Context) {
-	// idCamera := ctx.Query("idCamera")
-	// if idCamera == "" {
-	// 	logs.Error("get param idCamera failed")
-	// 	http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// camera, err := base_service.CameraSelectById(idCamera)
-	// if err != nil {
-	// 	logs.Error("query camera error : %v", err)
-	// 	result := common.ErrorResult("internal error")
-	// 	ctx.JSON(http.StatusOK, result)
-	// 	return
-	// }
-
 	fileInfoList, err := ext_service.CameraFindRecordFiles()
 	if err != nil {
 		logs.Error("CameraGetRecordFiles error : %v", err)
@@ -235,6 +220,6 @@ func CameraGetRecordFiles(ctx *gin.Context) {
 		return
 	}
 
-	result := common.SuccessResultWithMsg("succss", fileInfoList)
+	result := common.SuccessResultWithMsg("success", fileInfoList)
 	ctx.JSON(http.StatusOK, result)
 }
