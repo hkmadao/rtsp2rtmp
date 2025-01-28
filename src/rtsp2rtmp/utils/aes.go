@@ -3,15 +3,12 @@ package utils
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"encoding/hex"
 )
 
-func EncryptAES(key []byte, plaintext string) (string, error) {
-	plainBytes := []byte(plaintext)
-
+func EncryptAES(key []byte, plainBytes []byte) (bytes []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	// The IV needs to be unique, but does not have to be secret.
@@ -20,29 +17,24 @@ func EncryptAES(key []byte, plaintext string) (string, error) {
 
 	stream := cipher.NewOFB(block, iv)
 
-	ciphertext := make([]byte, len(plainBytes))
-	stream.XORKeyStream(ciphertext, plainBytes)
+	bytes = make([]byte, len(plainBytes))
+	stream.XORKeyStream(bytes, plainBytes)
 
-	return hex.EncodeToString(ciphertext), nil
+	return
 }
 
-func DecryptAES(key []byte, ciphertext string) (string, error) {
-	encrypted, err := hex.DecodeString(ciphertext)
-	if err != nil {
-		return "", err
-	}
-
+func DecryptAES(key []byte, encrypted []byte) (bytes []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	iv := key[:block.BlockSize()]
 
 	stream := cipher.NewOFB(block, iv)
 
-	plaintext := make([]byte, len(encrypted))
-	stream.XORKeyStream(plaintext, encrypted)
+	bytes = make([]byte, len(encrypted))
+	stream.XORKeyStream(bytes, encrypted)
 
-	return string(plaintext), nil
+	return
 }

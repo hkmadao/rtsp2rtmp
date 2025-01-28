@@ -24,6 +24,8 @@ func historyVideoPage(commandMessage CommandMessage) {
 		logs.Error("historyVideoPage connect to server error: %v", err)
 		return
 	}
+	defer conn.Close()
+
 	pageInfo, err := base_service.CameraRecordFindPageByCondition(pageInfoInput)
 	if err != nil {
 		logs.Error("aqPage error : %v", err)

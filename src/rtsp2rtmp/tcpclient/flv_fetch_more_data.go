@@ -27,6 +27,8 @@ func flvFetchMoreData(commandMessage CommandMessage) {
 		logs.Error("flvFetchMoreData connect to server error: %v", err)
 		return
 	}
+	defer conn.Close()
+
 	value, ok := playerMap.Load(param.PlayerId)
 	if !ok {
 		logs.Error("playerId: %s not exists or complate", param.PlayerId)

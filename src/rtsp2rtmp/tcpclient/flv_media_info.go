@@ -29,6 +29,8 @@ func flvFileMediaInfo(commandMessage CommandMessage) {
 		logs.Error("flvFileMediaInfo connect to server error: %v", err)
 		return
 	}
+	defer conn.Close()
+
 	camera_record, err := base_service.CameraRecordSelectById(idCameraRecord)
 	if err != nil {
 		logs.Error("idCameraRecord: %s CameraRecordSelectById error: %v", idCameraRecord, err)

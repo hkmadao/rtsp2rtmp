@@ -29,23 +29,31 @@ type FlvPush struct {
 // override io.Writer
 func (flvPush FlvPush) Write(p []byte) (n int, err error) {
 	messageBytes := p
+	// messageLenBytes := utils.Int32ToByteBigEndian(int32(len(messageBytes)))
+	// fullMessageBytes := append(messageLenBytes, messageBytes...)
+	// n, err = flvPush.conn.Write(fullMessageBytes)
+	// if err != nil {
+	// 	logs.Error("register error: %v", err)
+	// 	return
+	// }
+	// return len(p), nil
 	secretStr, err := config.String("server.remote.secret")
 	if err != nil {
 		logs.Error("get remote secret error: %v", err)
 		return
 	}
-	encryptMessageStr, err := utils.EncryptAES([]byte(secretStr), string(messageBytes))
+	encryptMessageBytes, err := utils.EncryptAES([]byte(secretStr), messageBytes)
 	if err != nil {
 		logs.Error("EncryptAES error: %v", err)
 		return
 	}
-	encryptMessageBytes := string(encryptMessageStr)
+
 	encryptMessageLen := len(encryptMessageBytes)
 	encryptMessageLenBytes := utils.Int32ToByteBigEndian(int32(encryptMessageLen))
 	fullMessageBytes := append(encryptMessageLenBytes, encryptMessageBytes...)
 	_, err = flvPush.conn.Write(fullMessageBytes)
 	if err != nil {
-		logs.Error("register error: %v", err)
+		logs.Error("flvPush Write error: %v", err)
 		return
 	}
 	return len(p), nil
@@ -64,6 +72,8 @@ func flvPlay(commandMessage CommandMessage) {
 		logs.Error("flvPlay connect to server error: %v", err)
 		return
 	}
+	defer conn.Close()
+
 	camera_record, err := base_service.CameraRecordSelectById(playParam.IdCameraRecord)
 	if err != nil {
 		logs.Error("CameraRecordSelectById error: %v", err)

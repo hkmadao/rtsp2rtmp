@@ -18,6 +18,19 @@ func GetEqualCondition(fieldName string, value interface{}) (condition AqConditi
 	return
 }
 
+func GetLtCondition(fieldName string, value interface{}) (condition AqCondition) {
+	filterNode := AqFilterNode{}
+	filterNode.OperatorCode = OPERATOR_CODE_LT
+	filterNode.Name = fieldName
+	filterNode.FilterParams = []interface{}{value}
+
+	logicNode := AqLogicNode{}
+	logicNode.LogicOperatorCode = LOGIC_OPERATOR_CODE_AND
+	logicNode.FilterNodes = []AqFilterNode{filterNode}
+	condition = AqCondition{LogicNode: &logicNode}
+	return
+}
+
 func GetInCondition(fieldName string, values []interface{}) (condition AqCondition) {
 	filterNode := AqFilterNode{}
 	filterNode.OperatorCode = OPERATOR_CODE_IN

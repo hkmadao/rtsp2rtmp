@@ -2,6 +2,7 @@ package tcpclient
 
 import (
 	"encoding/json"
+	"io"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -35,26 +36,43 @@ func commandReceiveConnect() {
 		}
 		dataLen := utils.BigEndianToUint32(dataLenBytes)
 
-		serverRepBytes := make([]byte, dataLen)
-		_, err = conn.Read(serverRepBytes)
-		if err != nil {
-			logs.Error("read message body error: %v", err)
-			break
+		serverRepBytes := make([]byte, 0)
+		for {
+			buffer := make([]byte, dataLen-uint32(len(serverRepBytes)))
+			n, err := conn.Read(buffer)
+			if err != nil {
+				if err != io.EOF {
+					logs.Error("conn read message body error: %v", err)
+					return
+				}
+				break
+			}
+			// 处理读取到的数据，n是实际读取的字节数
+			serverRepBytes = append(serverRepBytes, buffer[:n]...)
+			if uint32(len(serverRepBytes)) == dataLen {
+				break
+			}
 		}
-		secretCommandStr := string(serverRepBytes)
+
+		// commandMessage := CommandMessage{}
+		// err = json.Unmarshal(serverRepBytes, &commandMessage)
+		// if err != nil {
+		// 	logs.Error("message format error: %v", err)
+		// 	continue
+		// }
 
 		secretStr, err := config.String("server.remote.secret")
 		if err != nil {
 			logs.Error("get remote secret error: %v", err)
 			return
 		}
-		commandStr, err := utils.DecryptAES([]byte(secretStr), secretCommandStr)
+		commandBytes, err := utils.DecryptAES([]byte(secretStr), serverRepBytes)
 		if err != nil {
 			logs.Error("message DecryptAES error: %v", err)
 			continue
 		}
 		commandMessage := CommandMessage{}
-		err = json.Unmarshal([]byte(commandStr), &commandMessage)
+		err = json.Unmarshal(commandBytes, &commandMessage)
 		if err != nil {
 			logs.Error("message format error: %v", err)
 			continue

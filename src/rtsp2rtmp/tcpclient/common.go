@@ -42,12 +42,8 @@ func newReisterInfo(connType string, messageId string) (ri RegisterInfo, err err
 		logs.Error("get remote sign-secret error: %v\n", err)
 		return
 	}
-	planText := fmt.Sprintf("clientCode=%s&dateStr=%s", clientCode, currentDateStr)
-	signStr, err := utils.EncryptAES([]byte(signSecret), planText)
-	if err != nil {
-		err = fmt.Errorf("buildSign error: %v", err)
-		return
-	}
+	planText := fmt.Sprintf("clientCode=%s&dateStr=%s&signSecret=%s", clientCode, currentDateStr, signSecret)
+	signStr := utils.Md5(planText)
 
 	ri = RegisterInfo{
 		ClientCode: clientCode,
@@ -104,17 +100,26 @@ func writeResult(result common.AppResult, writer io.Writer) (n int, err error) {
 		logs.Error(err)
 		return
 	}
+	// messageLenBytes := utils.Int32ToByteBigEndian(int32(len(messageBytes)))
+	// fullMessageBytes := append(messageLenBytes, messageBytes...)
+	// n, err = writer.Write(fullMessageBytes)
+	// if err != nil {
+	// 	logs.Error("register error: %v", err)
+	// 	return
+	// }
+	// return
+
 	secretStr, err := config.String("server.remote.secret")
 	if err != nil {
 		logs.Error("get remote secret error: %v", err)
 		return
 	}
-	encryptMessageStr, err := utils.EncryptAES([]byte(secretStr), string(messageBytes))
+	encryptMessageBytes, err := utils.EncryptAES([]byte(secretStr), messageBytes)
 	if err != nil {
 		logs.Error("EncryptAES error: %v", err)
 		return
 	}
-	encryptMessageBytes := string(encryptMessageStr)
+
 	encryptMessageLen := len(encryptMessageBytes)
 	encryptMessageLenBytes := utils.Int32ToByteBigEndian(int32(encryptMessageLen))
 	fullMessageBytes := append(encryptMessageLenBytes, encryptMessageBytes...)

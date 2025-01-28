@@ -22,6 +22,7 @@ func cameraAq(commandMessage CommandMessage) {
 		logs.Error("cameraAq connect to server error: %v", err)
 		return
 	}
+	defer conn.Close()
 
 	cameras, err := base_service.CameraFindCollectionByCondition(condition)
 	if err != nil {

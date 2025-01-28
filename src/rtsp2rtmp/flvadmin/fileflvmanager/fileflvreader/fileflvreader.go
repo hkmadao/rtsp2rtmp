@@ -281,3 +281,14 @@ func FlvDurationReadUntilErr(fileName string) (n int, err error) {
 	n = int(totalTime / time.Millisecond)
 	return
 }
+
+func FlvFileExists(fileName string) bool {
+	fullFileName := getFileFlvPath() + "/" + fileName
+	_, err := os.Stat(fullFileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}
