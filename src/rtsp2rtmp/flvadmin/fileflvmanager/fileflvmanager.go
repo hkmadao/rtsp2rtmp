@@ -94,7 +94,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 					return true
 				})
 				sessionId := utils.NextValSnowflakeID()
-				//添加缓冲，减少包到达速率震荡导致丢包
+				//添加缓冲
 				pktStream := make(chan av.Packet, 1024)
 				newFfw := fileflvwriter.NewFileFlvWriter(sessionId, pktStream, code, ffm.codecs, ffm)
 				ffm.ffws.Store(sessionId, newFfw)
@@ -102,7 +102,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		}
 	}()
 	sessionId := utils.NextValSnowflakeID()
-	//添加缓冲，减少包到达速率震荡导致丢包
+	//添加缓冲
 	ffwPktStream := make(chan av.Packet, 1024)
 	newFfw := fileflvwriter.NewFileFlvWriter(sessionId, ffwPktStream, code, codecs, ffm)
 	ffm.ffws.Store(sessionId, newFfw)

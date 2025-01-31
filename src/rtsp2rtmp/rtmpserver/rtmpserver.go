@@ -174,7 +174,7 @@ func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {
 	base_service.CameraUpdateById(camera)
 
 	done := make(chan int)
-	//添加缓冲，缓解前后速率不一致问题，但是如果收包平均速率大于消费平均速率，依然会导致丢包
+	//添加缓冲
 	pktStream := make(chan av.Packet, 1024)
 	heartBeatChan := make(chan int)
 	defer func() {

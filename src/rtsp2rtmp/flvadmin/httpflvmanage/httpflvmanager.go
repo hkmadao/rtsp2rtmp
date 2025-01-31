@@ -123,7 +123,7 @@ func (hfm *HttpFlvManager) AddHttpFlvPlayer(
 	writer io.Writer,
 ) (<-chan int, error) {
 	sessionId := utils.NextValSnowflakeID()
-	//添加缓冲，减少包到达速率震荡导致丢包
+	//添加缓冲
 	pktStream := make(chan av.Packet, 1024)
 	hfw := httpflvwriter.NewHttpFlvWriter(hfm.GetDone(), playerDone, pulseInterval, pktStream, hfm.code, hfm.codecs, writer, sessionId, hfm)
 	hfm.hfws.Store(sessionId, hfw)
