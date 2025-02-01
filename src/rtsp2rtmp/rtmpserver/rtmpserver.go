@@ -12,7 +12,7 @@ import (
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtmp"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/ffmpegmanager"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmppublisher"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver/rtmppublisher"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
@@ -259,18 +259,22 @@ func getParamByURI(conn *rtmp.Conn) (string, string, bool) {
 
 // 权限验证
 func authentication(camera entity.Camera, code string, authCode string, conn *rtmp.Conn) bool {
-	fgSuccess := ffmpegmanager.ValiadRtmpInfo(code, authCode)
-	if !fgSuccess {
-		logs.Error("camera %s RtmpAuthCode error : %s", code, authCode)
-		conn.Close()
-		return false
-	}
-	if camera.Enabled != true {
+	if !camera.Enabled {
 		logs.Error("camera %s disabled : %s", code, authCode)
 		err := conn.Close()
 		if err != nil {
 			logs.Error("close conn error : %v", err)
 		}
+		return false
+	}
+	if camera.CameraType == "rtsp" && !ffmpegmanager.ExistsRtspConn(code) {
+		logs.Error("camera %s CameraType: rtsp, but rtsp conn not exists", code)
+		conn.Close()
+		return false
+	}
+	if camera.RtmpAuthCode != authCode {
+		logs.Error("camera %s RtmpAuthCode error : %s", code, authCode)
+		conn.Close()
 		return false
 	}
 	return true

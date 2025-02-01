@@ -77,7 +77,7 @@ func (s *RtspClientManager) startConnections() {
 			logs.Error("rtspManager panic %v", r)
 		}
 	}()
-	condition := common.GetEmptyCondition()
+	condition := common.GetEqualCondition("cameraType", "rtsp")
 	es, err := base_service.CameraFindCollectionByCondition(condition)
 	if err != nil {
 		logs.Error("camera list query error: %s", err)

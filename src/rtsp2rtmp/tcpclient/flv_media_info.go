@@ -16,20 +16,26 @@ type FlvFileMediaInfoParam struct {
 }
 
 func flvFileMediaInfo(commandMessage CommandMessage) {
-	paramStr := commandMessage.Param
-	param := FlvFileMediaInfoParam{}
-	err := json.Unmarshal([]byte(paramStr), &param)
-	if err != nil {
-		logs.Error("flvFileMediaInfo message format error: %v", err)
-		return
-	}
-	idCameraRecord := param.IdCameraRecord
 	conn, err := connectAndRegister("flvFileMediaInfo", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFileMediaInfo connect to server error: %v", err)
 		return
 	}
 	defer conn.Close()
+	paramStr := commandMessage.Param
+	param := FlvFileMediaInfoParam{}
+	err = json.Unmarshal([]byte(paramStr), &param)
+	if err != nil {
+		logs.Error("flvFileMediaInfo message format error: %v", err)
+		result := common.ErrorResult(fmt.Sprintf("flvFileMediaInfo message format error: %v", err))
+		_, err = writeResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		return
+	}
+	idCameraRecord := param.IdCameraRecord
 
 	camera_record, err := base_service.CameraRecordSelectById(idCameraRecord)
 	if err != nil {

@@ -11,16 +11,14 @@ import (
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/go-cmd/cmd"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 type FFmpegInfo struct {
-	startTime      time.Time
-	templatePasswd string
-	ffMpegCmd      *cmd.Cmd
+	startTime time.Time
+	ffMpegCmd *cmd.Cmd
 }
 
 var rcmInstance *FFmpegManager
@@ -63,14 +61,14 @@ func (rs *FFmpegManager) checkBlockFFmpegProcess() {
 		}
 	}()
 	for {
-		condition := common.GetEmptyCondition()
+		condition := common.GetEqualCondition("cameraType", "rtsp")
 		es, err := base_service.CameraFindCollectionByCondition(condition)
 		if err != nil {
 			logs.Error("camera list query error: %s", err)
 			return
 		}
 		for _, camera := range es {
-			if camera.OnlineStatus != true {
+			if !camera.OnlineStatus {
 				v, b := rs.rcs.Load(camera.Code)
 				if b {
 					ffmpegInfo := v.(FFmpegInfo)
@@ -115,7 +113,7 @@ func (s *FFmpegManager) startConnections() {
 		}
 	}()
 	for {
-		condition := common.GetEmptyCondition()
+		condition := common.GetEqualCondition("cameraType", "rtsp")
 		es, err := base_service.CameraFindCollectionByCondition(condition)
 		if err != nil {
 			logs.Error("camera list query error: %s", err)
@@ -125,7 +123,7 @@ func (s *FFmpegManager) startConnections() {
 			if v, b := s.rcs.Load(camera.Code); b && v != nil {
 				continue
 			}
-			if camera.Enabled != true {
+			if !camera.Enabled {
 				continue
 			}
 			go s.connRtsp(camera.Code)
@@ -159,8 +157,8 @@ func (ffmpegManager *FFmpegManager) connRtsp(code string) {
 		logs.Error("get rtmp port fail : %v", err)
 		return
 	}
-	templatePasswd, _ := utils.GenerateId()
-	rtmpUrl := fmt.Sprintf("rtmp://127.0.0.1:%d/%s/%s", rtmpPort, code, templatePasswd)
+
+	rtmpUrl := fmt.Sprintf("rtmp://127.0.0.1:%d/%s/%s", rtmpPort, code, camera.RtmpAuthCode)
 	portOpen := checkTargetPortStatus(camera.RtspUrl)
 	if !portOpen {
 		logs.Error("rtspUrl: %s port not open", camera.RtspUrl)
@@ -168,7 +166,7 @@ func (ffmpegManager *FFmpegManager) connRtsp(code string) {
 	}
 	// 只支持h264编码, 使用"-c:v copy", 不要使用其他选项, 出发视频转码会导致cpu很高
 	ffmpegCmd := cmd.NewCmd("ffmpeg", "-i", camera.RtspUrl, "-c:v", "copy", "-c:a", "aac", "-f", "flv", rtmpUrl)
-	ffmpegManager.rcs.Store(code, FFmpegInfo{startTime: time.Now(), templatePasswd: templatePasswd, ffMpegCmd: ffmpegCmd})
+	ffmpegManager.rcs.Store(code, FFmpegInfo{startTime: time.Now(), ffMpegCmd: ffmpegCmd})
 	logs.Info("ffmpeg start connect rtsp : command : %s %s", ffmpegCmd.Name, strings.Join(ffmpegCmd.Args, " "))
 	statusChan := ffmpegCmd.Start()
 	finalStatus := <-statusChan
@@ -190,23 +188,9 @@ func (r *FFmpegManager) Delete(key interface{}) {
 	r.rcs.Delete(key)
 }
 
-func ValiadRtmpInfo(code string, passwd string) (fgSuccess bool) {
-	v, ok := GetSingleFFmpegManager().rcs.Load(code)
-	if !ok {
-		fgSuccess = false
-		return
-	}
-	fFmpegInfo, ok := v.(FFmpegInfo)
-	if !ok {
-		fgSuccess = false
-		return
-	}
-	if fFmpegInfo.templatePasswd != passwd {
-		fgSuccess = false
-		return
-	}
-	fgSuccess = true
-	return
+func ExistsRtspConn(code string) bool {
+	_, ok := GetSingleFFmpegManager().rcs.Load(code)
+	return ok
 }
 
 func checkTargetPortStatus(rtspUrl string) (open bool) {

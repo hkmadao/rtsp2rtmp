@@ -91,9 +91,9 @@ func RtmpPushChange(ctx *gin.Context) {
 	switch {
 	case q.RtmpPushStatus != true:
 		logs.Info("camera [%s] stop push rtmp", q.Code)
-		flvadmin.GetSingleRtmpFlvAdmin().StopWrite(q.Code)
+		flvadmin.GetSingleRtmpFlvAdmin().ReConntion(q.Code)
 	case q.RtmpPushStatus == true:
-		flvadmin.GetSingleRtmpFlvAdmin().StartWrite(q.Code)
+		flvadmin.GetSingleRtmpFlvAdmin().StartWrite(q.Code, !q.FgPassive)
 		logs.Info("camera [%s] start push rtmp", q.Code)
 	}
 

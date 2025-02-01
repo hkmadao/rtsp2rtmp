@@ -89,6 +89,41 @@ func GetCameraDesc() *common.EntityDesc {
         DataType: "DateTime",
 				ValueType: "DateTime",
     };
+    var fgSecretAttributeInfo = &common.AttributeInfo {
+        ColumnName: "fg_secret",
+        Name: "fgSecret",
+        DisplayName: "加密标志",
+        DataType: "Boolean",
+				ValueType: "bool",
+    };
+    var secretAttributeInfo = &common.AttributeInfo {
+        ColumnName: "secret",
+        Name: "secret",
+        DisplayName: "密钥",
+        DataType: "String",
+				ValueType: "string",
+    };
+    var fgPassiveAttributeInfo = &common.AttributeInfo {
+        ColumnName: "fg_passive",
+        Name: "fgPassive",
+        DisplayName: "被动推送rtmp标志",
+        DataType: "Boolean",
+				ValueType: "bool",
+    };
+    var rtmpAuthCodeAttributeInfo = &common.AttributeInfo {
+        ColumnName: "rtmp_auth_code",
+        Name: "rtmpAuthCode",
+        DisplayName: "rtmp识别码",
+        DataType: "String",
+				ValueType: "string",
+    };
+    var cameraTypeAttributeInfo = &common.AttributeInfo {
+        ColumnName: "camera_type",
+        Name: "cameraType",
+        DisplayName: "摄像头类型",
+        DataType: "String",
+				ValueType: "string",
+    };
     var cameraSharesAttributeInfo = &common.AttributeInfo {
         ColumnName: "",
         Name: "cameraShares",
@@ -124,6 +159,11 @@ func GetCameraDesc() *common.EntityDesc {
           "saveVideo": saveVideoAttributeInfo,
           "live": liveAttributeInfo,
           "created": createdAttributeInfo,
+          "fgSecret": fgSecretAttributeInfo,
+          "secret": secretAttributeInfo,
+          "fgPassive": fgPassiveAttributeInfo,
+          "rtmpAuthCode": rtmpAuthCodeAttributeInfo,
+          "cameraType": cameraTypeAttributeInfo,
           "cameraShares": cameraSharesAttributeInfo,
 			},
     }

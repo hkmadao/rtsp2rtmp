@@ -95,6 +95,10 @@ func commandRes(commandMessage CommandMessage) {
 		flvPlay(commandMessage)
 	case "flvFetchMoreData":
 		flvFetchMoreData(commandMessage)
+	case "startPushRtmp":
+		startRtmpPush(commandMessage)
+	case "stopPushRtmp":
+		stopRtmpPush(commandMessage)
 	default:
 		logs.Error("unsupport commandType: %s", commandMessage.MessageType)
 	}

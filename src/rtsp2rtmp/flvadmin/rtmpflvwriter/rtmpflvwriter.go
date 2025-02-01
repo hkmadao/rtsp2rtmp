@@ -17,6 +17,8 @@ type IRtmpFlvManager interface {
 }
 
 type RtmpFlvWriter struct {
+	needPushRtmp  bool
+	stop          bool
 	done          chan int
 	pktStream     <-chan av.Packet
 	code          string
@@ -49,8 +51,14 @@ func (rfw *RtmpFlvWriter) GetCodecs() []av.CodecData {
 	return rfw.codecs
 }
 
-func NewRtmpFlvWriter(pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
+func (rfw *RtmpFlvWriter) GetNeedPushRtmp() bool {
+	return rfw.needPushRtmp
+}
+
+func NewRtmpFlvWriter(needPushRtmp bool, pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
 	rfw := &RtmpFlvWriter{
+		needPushRtmp:  needPushRtmp,
+		stop:          false,
 		done:          make(chan int),
 		pktStream:     pktStream,
 		code:          code,
@@ -70,6 +78,7 @@ func (rfw *RtmpFlvWriter) StopWrite() {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
+		rfw.stop = true
 		close(rfw.done)
 	}()
 }
@@ -108,7 +117,7 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 	if camera.OnlineStatus != true {
 		return
 	}
-	if camera.RtmpPushStatus != true {
+	if camera.RtmpPushStatus != true || !rfw.needPushRtmp {
 		go func() {
 			for {
 				select {
@@ -127,10 +136,14 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 			logs.Info("disconnect old RtmpFlvWriter : %s", rfw.code)
 			rfw.conn.Close()
 		}
+		if rfw.stop {
+			logs.Info("stop RtmpFlvWriter : %s", rfw.code)
+			return
+		}
 		_, pktStreamOk := <-rfw.pktStream
 		if pktStreamOk {
 			logs.Info("to create NewRtmpFlvWriter : %s", rfw.code)
-			rfwn := NewRtmpFlvWriter(rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
+			rfwn := NewRtmpFlvWriter(true, rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
 			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
 		} else {
 			logs.Info("RtmpFlvWriter pktStream is closed : %s", rfw.code)

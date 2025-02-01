@@ -12,19 +12,25 @@ import (
 )
 
 func historyVideoPage(commandMessage CommandMessage) {
-	paramStr := commandMessage.Param
-	pageInfoInput := common.AqPageInfoInput{}
-	err := json.Unmarshal([]byte(paramStr), &pageInfoInput)
-	if err != nil {
-		logs.Error("historyVideoPage message format error: %v", err)
-		return
-	}
 	conn, err := connectAndRegister("historyVideoPage", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("historyVideoPage connect to server error: %v", err)
 		return
 	}
 	defer conn.Close()
+	paramStr := commandMessage.Param
+	pageInfoInput := common.AqPageInfoInput{}
+	err = json.Unmarshal([]byte(paramStr), &pageInfoInput)
+	if err != nil {
+		logs.Error("historyVideoPage message format error: %v", err)
+		result := common.ErrorResult(fmt.Sprintf("historyVideoPage message format error: %v", err))
+		_, err = writeResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		return
+	}
 
 	pageInfo, err := base_service.CameraRecordFindPageByCondition(pageInfoInput)
 	if err != nil {

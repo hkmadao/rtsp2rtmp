@@ -57,16 +57,13 @@ func (t *task) offlineCamera() {
 		fgUseFfmpeg = false
 	}
 	for {
-		condition := common.GetEmptyCondition()
+		condition := common.GetEqualCondition("onlineStatus", true)
 		css, err := base_service.CameraFindCollectionByCondition(condition)
 		if err != nil {
 			logs.Error("query camera error : %v", err)
 		}
 		for _, cs := range css {
-			if cs.OnlineStatus != true {
-				continue
-			}
-			if fgUseFfmpeg {
+			if cs.CameraType == "rtmp" || fgUseFfmpeg {
 				if exists := rtmpserver.GetSingleRtmpServer().ExistsPublisher(cs.Code); !exists {
 					cs.OnlineStatus = false
 					base_service.CameraUpdateById(cs)

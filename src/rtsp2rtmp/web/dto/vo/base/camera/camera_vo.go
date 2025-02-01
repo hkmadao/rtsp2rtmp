@@ -28,4 +28,16 @@ type CameraVO struct {
 	Live bool `json:"live"`
 	// 创建时间:
 	Created time.Time `json:"created"`
+	// 加密标志:
+	FgSecret bool `json:"fgSecret"`
+	// 密钥:
+	Secret string `json:"secret"`
+	// 被动推送rtmp标志
+	FgPassive bool `json:"fgPassive"`
+	// rtmp识别码:
+	RtmpAuthCode string `json:"rtmpAuthCode"`
+	// 摄像头类型:
+	CameraType string `json:"cameraType"`
+	// 摄像头分享
+	// CameraShares []CameraShareVO `json:"cameraShares"`
 }

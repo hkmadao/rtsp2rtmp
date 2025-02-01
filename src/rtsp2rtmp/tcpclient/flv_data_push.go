@@ -60,19 +60,25 @@ func (flvPush FlvPush) Write(p []byte) (n int, err error) {
 }
 
 func flvPlay(commandMessage CommandMessage) {
-	paramStr := commandMessage.Param
-	playParam := PlayParam{}
-	err := json.Unmarshal([]byte(paramStr), &playParam)
-	if err != nil {
-		logs.Error("flvPlay message format error: %v", err)
-		return
-	}
 	conn, err := connectAndRegister("flvPlay", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvPlay connect to server error: %v", err)
 		return
 	}
 	defer conn.Close()
+	paramStr := commandMessage.Param
+	playParam := PlayParam{}
+	err = json.Unmarshal([]byte(paramStr), &playParam)
+	if err != nil {
+		logs.Error("flvPlay message format error: %v", err)
+		result := common.ErrorResult(fmt.Sprintf("flvPlay message format error: %v", err))
+		_, err = writeResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		return
+	}
 
 	camera_record, err := base_service.CameraRecordSelectById(playParam.IdCameraRecord)
 	if err != nil {

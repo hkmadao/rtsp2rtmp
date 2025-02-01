@@ -2,6 +2,7 @@ package tcpclient
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
@@ -10,19 +11,26 @@ import (
 )
 
 func cameraAq(commandMessage CommandMessage) {
-	paramStr := commandMessage.Param
-	condition := common.AqCondition{}
-	err := json.Unmarshal([]byte(paramStr), &condition)
-	if err != nil {
-		logs.Error("cameraAq message format error: %v", err)
-		return
-	}
 	conn, err := connectAndRegister("cameraAq", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("cameraAq connect to server error: %v", err)
 		return
 	}
 	defer conn.Close()
+
+	paramStr := commandMessage.Param
+	condition := common.AqCondition{}
+	err = json.Unmarshal([]byte(paramStr), &condition)
+	if err != nil {
+		logs.Error("cameraAq message format error: %v", err)
+		result := common.ErrorResult(fmt.Sprintf("cameraAq message format error: %v", err))
+		_, err = writeResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		return
+	}
 
 	cameras, err := base_service.CameraFindCollectionByCondition(condition)
 	if err != nil {

@@ -27,6 +27,16 @@ type Camera struct {
 	Live bool `orm:"column(live)" json:"live"`
 	// 创建时间:
 	Created time.Time `orm:"column(created)" json:"created"`
+	// 加密标志:
+	FgSecret bool `orm:"column(fg_secret)" json:"fgSecret"`
+	// 密钥:
+	Secret string `orm:"column(secret)" json:"secret"`
+	// 被动推送rtmp标志
+	FgPassive bool `orm:"column(fg_passive)" json:"fgPassive"`
+	// rtmp识别码:
+	RtmpAuthCode string `orm:"column(rtmp_auth_code)" json:"rtmpAuthCode"`
+	// 摄像头类型:
+	CameraType string `orm:"column(camera_type)" json:"cameraType"`
 	// 摄像头分享
 	CameraShares []CameraShare `orm:"-" json:"cameraShares"`
 }

@@ -15,19 +15,26 @@ type FetchMoreDataParam struct {
 }
 
 func flvFetchMoreData(commandMessage CommandMessage) {
-	paramStr := commandMessage.Param
-	param := FetchMoreDataParam{}
-	err := json.Unmarshal([]byte(paramStr), &param)
-	if err != nil {
-		logs.Error("flvFetchMoreData message format error: %v", err)
-		return
-	}
 	conn, err := connectAndRegister("flvFetchMoreData", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFetchMoreData connect to server error: %v", err)
 		return
 	}
 	defer conn.Close()
+
+	paramStr := commandMessage.Param
+	param := FetchMoreDataParam{}
+	err = json.Unmarshal([]byte(paramStr), &param)
+	if err != nil {
+		logs.Error("flvFetchMoreData message format error: %v", err)
+		result := common.ErrorResult(fmt.Sprintf("flvFetchMoreData message format error: %v", err))
+		_, err = writeResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		return
+	}
 
 	value, ok := playerMap.Load(param.PlayerId)
 	if !ok {
