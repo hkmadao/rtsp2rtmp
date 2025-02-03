@@ -51,7 +51,7 @@ func (rfm *RtmpFlvAdmin) ReConntion(code string) {
 	if ok {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		rfw.StopWrite()
-		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(false, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
+		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(rfw.GetNeedPushRtmp(), rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
 		rfm.rfms.Store(code, rfwNew)
 	}
 }
@@ -61,6 +61,7 @@ func (rfm *RtmpFlvAdmin) RemoteStartWrite(code string) {
 	if ok {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		if !rfw.GetNeedPushRtmp() {
+			rfw.StopWrite()
 			rfwNew := rtmpflvwriter.NewRtmpFlvWriter(true, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
 			rfm.rfms.Store(code, rfwNew)
 		}

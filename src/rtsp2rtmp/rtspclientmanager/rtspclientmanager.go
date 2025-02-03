@@ -87,7 +87,7 @@ func (s *RtspClientManager) startConnections() {
 	for {
 		timeNow := time.Now()
 		if timeNow.After(timeTemp.Add(30 * time.Second)) {
-			condition := common.GetEmptyCondition()
+			condition := common.GetEqualCondition("cameraType", "rtsp")
 			es, err = base_service.CameraFindCollectionByCondition(condition)
 			if err != nil {
 				logs.Error("camera list query error: %s", err)

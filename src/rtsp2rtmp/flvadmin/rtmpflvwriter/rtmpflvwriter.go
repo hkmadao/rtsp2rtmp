@@ -142,13 +142,13 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 				select {
 				case <-rfw.GetDone():
 					return
-				case <-time.NewTicker(1 * time.Second).C:
+				case <-time.NewTicker(1 * time.Minute).C:
 					camerastatuspush.CameraOnlinePush(camera.Code)
 				}
 			}
 		}()
 	}
-	if !camera.RtmpPushStatus && !rfw.needPushRtmp {
+	if !camera.RtmpPushStatus || !rfw.needPushRtmp {
 		for {
 			select {
 			case <-rfw.GetDone():
