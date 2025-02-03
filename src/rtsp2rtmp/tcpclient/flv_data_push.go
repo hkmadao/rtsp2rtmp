@@ -9,6 +9,7 @@ import (
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -59,8 +60,8 @@ func (flvPush FlvPush) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func flvPlay(commandMessage CommandMessage) {
-	conn, err := connectAndRegister("flvPlay", commandMessage.MessageId)
+func flvPlay(commandMessage tcpclientcommon.CommandMessage) {
+	conn, err := tcpclientcommon.ConnectAndResRegister("flvPlay", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvPlay connect to server error: %v", err)
 		return
@@ -72,7 +73,7 @@ func flvPlay(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("flvPlay message format error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("flvPlay message format error: %v", err))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -84,7 +85,7 @@ func flvPlay(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("CameraRecordSelectById error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("idCameraRecord: %s CameraRecordSelectById error", playParam.IdCameraRecord))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -103,7 +104,7 @@ func flvPlay(commandMessage CommandMessage) {
 	if ok {
 		logs.Error("playerId: %s exists", playParam.PlayerId)
 		result := common.ErrorResult(fmt.Sprintf("playerId: %s exists", playParam.PlayerId))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return

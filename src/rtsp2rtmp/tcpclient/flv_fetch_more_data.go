@@ -6,6 +6,7 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 )
 
@@ -14,8 +15,8 @@ type FetchMoreDataParam struct {
 	SeekSecond uint64 `json:"seekSecond"`
 }
 
-func flvFetchMoreData(commandMessage CommandMessage) {
-	conn, err := connectAndRegister("flvFetchMoreData", commandMessage.MessageId)
+func flvFetchMoreData(commandMessage tcpclientcommon.CommandMessage) {
+	conn, err := tcpclientcommon.ConnectAndResRegister("flvFetchMoreData", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFetchMoreData connect to server error: %v", err)
 		return
@@ -28,7 +29,7 @@ func flvFetchMoreData(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("flvFetchMoreData message format error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("flvFetchMoreData message format error: %v", err))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -40,7 +41,7 @@ func flvFetchMoreData(commandMessage CommandMessage) {
 	if !ok {
 		logs.Error("playerId: %s not exists or complate", param.PlayerId)
 		result := common.SuccessResultMsg(fmt.Sprintf("playerId: %s not exists or complate, skip this request", param.PlayerId))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -52,7 +53,7 @@ func flvFetchMoreData(commandMessage CommandMessage) {
 
 	logs.Info("vod player [%s] fetch data, addr [%s]", param.PlayerId, conn.LocalAddr().String())
 	result := common.SuccessResultMsg("fetch sccess")
-	_, err = writeResult(result, conn)
+	_, err = tcpclientcommon.WriteResult(result, conn)
 	if err != nil {
 		logs.Error(err)
 		return

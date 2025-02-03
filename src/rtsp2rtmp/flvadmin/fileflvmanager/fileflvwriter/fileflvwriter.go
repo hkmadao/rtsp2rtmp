@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -39,6 +40,7 @@ type FileFlvWriter struct {
 	endTime   time.Time
 	ffm       IFileFlvManager
 	idCamera  string
+	mutex     sync.Mutex
 }
 
 func (ffw *FileFlvWriter) GetDone() <-chan int {
@@ -84,31 +86,7 @@ func NewFileFlvWriter(
 		isStart:     false,
 		ffm:         ffm,
 	}
-	condition := common.GetEqualCondition("code", code)
-	camera, err := base_service.CameraFindOneByCondition(condition)
-	if err != nil {
-		logs.Error("query camera error : %v", err)
-		return ffw
-	}
-	if camera.OnlineStatus != true {
-		return ffw
-	}
-	if camera.SaveVideo != true {
-		go func() {
-			for {
-				select {
-				case <-ffw.GetDone():
-					return
-				case _, ok := <-ffw.pktStream:
-					if !ok {
-						return
-					}
-				}
-			}
-		}()
-		return ffw
-	}
-	ffw.idCamera = camera.Id
+
 	go ffw.flvWrite()
 	return ffw
 }
@@ -121,9 +99,17 @@ func (ffw *FileFlvWriter) StopWrite() {
 			}
 		}()
 		ffw.ffm.DeleteFFW(ffw.sessionId)
+		ffw.CloseDone()
+	}()
+}
+
+func (ffw *FileFlvWriter) CloseDone() {
+	ffw.mutex.Lock()
+	if !ffw.fgDoneClose {
 		ffw.fgDoneClose = true
 		close(ffw.done)
-	}()
+	}
+	ffw.mutex.Unlock()
 }
 
 func (ffw *FileFlvWriter) TickerStopWrite() {
@@ -136,8 +122,7 @@ func (ffw *FileFlvWriter) TickerStopWrite() {
 		select {
 		case <-time.NewTicker(30 * time.Second).C: //等待30秒再关闭
 			ffw.ffm.DeleteFFW(ffw.sessionId)
-			ffw.fgDoneClose = true
-			close(ffw.done)
+			ffw.CloseDone()
 		case <-ffw.GetDone():
 		}
 	}()
@@ -180,11 +165,36 @@ func (ffw *FileFlvWriter) flvWrite() {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
+	defer func() {
+		ffw.CloseDone()
+	}()
+	condition := common.GetEqualCondition("code", ffw.code)
+	camera, err := base_service.CameraFindOneByCondition(condition)
+	if err != nil {
+		logs.Error("query camera error : %v", err)
+		return
+	}
+	if !camera.OnlineStatus {
+		return
+	}
+	if !camera.SaveVideo {
+		for {
+			select {
+			case <-ffw.GetDone():
+				return
+			case _, ok := <-ffw.pktStream:
+				if !ok {
+					return
+				}
+			}
+		}
+	}
+	ffw.idCamera = camera.Id
+
 	if err := ffw.createFlvFile(); err != nil {
 		logs.Error("create file flv error : %v", err)
 		return
 	}
-
 	defer func() {
 		ffw.endTime = time.Now()
 		ffw.muxer.WriteTrailer()
@@ -192,10 +202,6 @@ func (ffw *FileFlvWriter) flvWrite() {
 
 		//写入script tag data，主要补充视频的总时长，否则使用播放器播放看不到视频总时长
 		ffw.writeScriptTagData()
-
-		if !ffw.fgDoneClose {
-			close(ffw.done)
-		}
 	}()
 
 	muxer := flv.NewMuxer(ffw)

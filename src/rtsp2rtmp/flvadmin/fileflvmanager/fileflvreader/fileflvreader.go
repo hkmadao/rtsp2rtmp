@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -28,27 +29,28 @@ type FileFlvReader struct {
 	fgStart      bool
 	fgOffSetTime bool
 	offSetTime   time.Duration // realTime = pkt.Time - offSetTime, offsetTime from is first pkt.Time
+	mutex        sync.Mutex
 }
 
-func (ffw *FileFlvReader) GetDone() <-chan int {
-	return ffw.done
+func (ffr *FileFlvReader) GetDone() <-chan int {
+	return ffr.done
 }
 
-func (ffw *FileFlvReader) GetCode() string {
-	return ffw.code
+func (ffr *FileFlvReader) GetCode() string {
+	return ffr.code
 }
 
-func (ffw *FileFlvReader) SetCodecs(codecs []av.CodecData) {
-	ffw.codecs = codecs
+func (ffr *FileFlvReader) SetCodecs(codecs []av.CodecData) {
+	ffr.codecs = codecs
 }
 
-func (ffw *FileFlvReader) GetCodecs() []av.CodecData {
-	return ffw.codecs
+func (ffr *FileFlvReader) GetCodecs() []av.CodecData {
+	return ffr.codecs
 }
 
-func (ffw *FileFlvReader) SetSeekSecond(seekSecond uint64) {
-	if seekSecond > ffw.seekSecond {
-		ffw.seekSecond = seekSecond
+func (ffr *FileFlvReader) SetSeekSecond(seekSecond uint64) {
+	if seekSecond > ffr.seekSecond {
+		ffr.seekSecond = seekSecond
 	}
 }
 
@@ -58,7 +60,7 @@ func NewFileFlvReader(
 	fileName string,
 ) *FileFlvReader {
 	myHttpWriter := newMyHttpWriter(writer)
-	ffw := &FileFlvReader{
+	ffr := &FileFlvReader{
 		fgDoneClose:  false,
 		done:         make(chan int),
 		httpWrite:    myHttpWriter,
@@ -69,46 +71,38 @@ func NewFileFlvReader(
 		fgOffSetTime: false,
 		offSetTime:   0,
 	}
-	go ffw.flvRead()
-	return ffw
+	go ffr.flvRead()
+	return ffr
 }
 
-func (ffw *FileFlvReader) StopRead() {
+func (ffr *FileFlvReader) StopRead() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 			}
 		}()
-		ffw.fgDoneClose = true
-		close(ffw.done)
+		ffr.CloseDone()
 	}()
 }
 
-func (ffw *FileFlvReader) TickerStopRead() {
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
-			}
-		}()
-		select {
-		case <-time.NewTicker(30 * time.Second).C: //等待30秒再关闭
-			ffw.fgDoneClose = true
-			close(ffw.done)
-		case <-ffw.GetDone():
-		}
-	}()
+func (ffr *FileFlvReader) CloseDone() {
+	ffr.mutex.Lock()
+	if !ffr.fgDoneClose {
+		ffr.fgDoneClose = true
+		close(ffr.done)
+	}
+	ffr.mutex.Unlock()
 }
 
-func (ffw *FileFlvReader) Read(p []byte) (n int, err error) {
+func (ffr *FileFlvReader) Read(p []byte) (n int, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
 
-	n, err = ffw.fd.Read(p)
+	n, err = ffr.fd.Read(p)
 	if err != nil {
 		logs.Error("Read file error : %v", err)
 	}
@@ -116,61 +110,59 @@ func (ffw *FileFlvReader) Read(p []byte) (n int, err error) {
 	return
 }
 
-func (ffw *FileFlvReader) openFlvFile() error {
-	fullFileName := getFileFlvPath() + "/" + ffw.fileName
+func (ffr *FileFlvReader) openFlvFile() error {
+	fullFileName := getFileFlvPath() + "/" + ffr.fileName
 	fd, err := os.OpenFile(fullFileName, os.O_RDWR, 0644)
 	if err != nil {
 		logs.Error("open file: %s error : %v", fullFileName, err)
 		return err
 	}
-	ffw.fd = fd
-	ffw.fullFileName = fullFileName
+	ffr.fd = fd
+	ffr.fullFileName = fullFileName
 	return nil
 }
 
-func (ffw *FileFlvReader) flvRead() {
+func (ffr *FileFlvReader) flvRead() {
 	defer func() {
 		if r := recover(); r != nil {
 			logs.Error("system painc : %v \nstack : %v", r, string(debug.Stack()))
 		}
 	}()
-	if err := ffw.openFlvFile(); err != nil {
+	if err := ffr.openFlvFile(); err != nil {
 		logs.Error("open file flv error : %v", err)
 		return
 	}
 	defer func() {
-		ffw.endTime = time.Now()
-		ffw.fd.Close()
+		ffr.endTime = time.Now()
+		ffr.fd.Close()
 
-		if !ffw.fgDoneClose {
-			close(ffw.done)
-		}
+		ffr.CloseDone()
 	}()
 
-	ffw.startTime = time.Now()
-	httpWriteMuxer := flv.NewMuxer(ffw.httpWrite)
-	demuxer := flv.NewDemuxer(ffw)
-	ffw.muxer = demuxer
+	ffr.startTime = time.Now()
+	httpWriteMuxer := flv.NewMuxer(ffr.httpWrite)
+	demuxer := flv.NewDemuxer(ffr)
+	ffr.muxer = demuxer
 	codecs, err := demuxer.Streams()
 	if err != nil {
 		logs.Error("read codecs from flv file error : %v", err)
 		return
 	}
-	ffw.codecs = codecs
+	ffr.codecs = codecs
 	httpWriteMuxer.WriteHeader(codecs)
 
-	if ffw.seekSecond > 0 {
+	if ffr.seekSecond > 0 {
 		for {
 			pkt, err := demuxer.ReadPacket()
 			if err != nil {
-				logs.Error("read file %s ReadPacket error : %v", ffw.fileName, err)
+				logs.Error("read file %s ReadPacket error : %v", ffr.fileName, err)
 				break
 			}
-			if !ffw.fgOffSetTime {
-				ffw.fgOffSetTime = true
-				ffw.offSetTime = pkt.Time
+			if !ffr.fgOffSetTime {
+				ffr.fgOffSetTime = true
+				ffr.offSetTime = pkt.Time
 			}
-			if (pkt.Time - ffw.offSetTime) >= time.Duration(ffw.seekSecond)*time.Second {
+			if (pkt.Time - ffr.offSetTime) >= time.Duration(ffr.seekSecond)*time.Second {
 				break
 			}
 		}
@@ -182,35 +174,35 @@ Loop:
 	for {
 		pkt, err := demuxer.ReadPacket()
 		if err != nil {
-			logs.Error("read file %s ReadPacket error : %v", ffw.fileName, err)
+			logs.Error("read file %s ReadPacket error : %v", ffr.fileName, err)
 			break
 		}
-		if !ffw.fgOffSetTime {
-			ffw.fgOffSetTime = true
-			ffw.offSetTime = pkt.Time
+		if !ffr.fgOffSetTime {
+			ffr.fgOffSetTime = true
+			ffr.offSetTime = pkt.Time
 		}
-		if !ffw.fgStart {
+		if !ffr.fgStart {
 			if !pkt.IsKeyFrame {
 				continue
 			}
-			ffw.fgStart = true
+			ffr.fgStart = true
 		}
 		err = httpWriteMuxer.WritePacket(pkt)
 		if err != nil {
-			logs.Error("read file %s WritePacket error : %v", ffw.fileName, err)
+			logs.Error("read file %s WritePacket error : %v", ffr.fileName, err)
 			break
 		}
 
-		sinceTime := time.Since(timeStart) + time.Duration(ffw.seekSecond)*time.Second
-		if (pkt.Time - ffw.offSetTime) > (sinceTime + 5*time.Minute) {
+		sinceTime := time.Since(timeStart) + time.Duration(ffr.seekSecond)*time.Second
+		if (pkt.Time - ffr.offSetTime) > (sinceTime + 5*time.Minute) {
 			select {
-			case <-ffw.done:
+			case <-ffr.done:
 				break Loop
 			case <-time.NewTicker(5 * time.Second).C:
 			}
 		}
 		select {
-		case <-ffw.done:
+		case <-ffr.done:
 			break Loop
 		default:
 		}

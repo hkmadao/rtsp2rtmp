@@ -9,7 +9,6 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtmpserver"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/rtspclientmanager"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
@@ -40,7 +39,6 @@ func (t *task) clearToken() {
 		}
 	}()
 	for {
-		web.ClearExipresToken()
 		<-time.After(24 * time.Hour)
 	}
 }

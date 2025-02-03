@@ -6,6 +6,7 @@ import (
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/vo/ext/flv_file"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -15,8 +16,8 @@ type FlvFileMediaInfoParam struct {
 	IdCameraRecord string `json:"idCameraRecord"`
 }
 
-func flvFileMediaInfo(commandMessage CommandMessage) {
-	conn, err := connectAndRegister("flvFileMediaInfo", commandMessage.MessageId)
+func flvFileMediaInfo(commandMessage tcpclientcommon.CommandMessage) {
+	conn, err := tcpclientcommon.ConnectAndResRegister("flvFileMediaInfo", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("flvFileMediaInfo connect to server error: %v", err)
 		return
@@ -28,7 +29,7 @@ func flvFileMediaInfo(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("flvFileMediaInfo message format error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("flvFileMediaInfo message format error: %v", err))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -41,7 +42,7 @@ func flvFileMediaInfo(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("idCameraRecord: %s CameraRecordSelectById error: %v", idCameraRecord, err)
 		result := common.ErrorResult(fmt.Sprintf("idCameraRecord: %s CameraRecordSelectById error", idCameraRecord))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -63,7 +64,7 @@ func flvFileMediaInfo(commandMessage CommandMessage) {
 		if err != nil {
 			logs.Error("file: %s get mediaInfo error", camera_record.TempFileName)
 			result := common.ErrorResult(fmt.Sprintf("file: %s get mediaInfo error", camera_record.TempFileName))
-			_, err = writeResult(result, conn)
+			_, err = tcpclientcommon.WriteResult(result, conn)
 			if err != nil {
 				logs.Error(err)
 				return
@@ -73,7 +74,7 @@ func flvFileMediaInfo(commandMessage CommandMessage) {
 	}
 
 	result := common.SuccessResultData(mediaInfo)
-	_, err = writeResult(result, conn)
+	_, err = tcpclientcommon.WriteResult(result, conn)
 	if err != nil {
 		logs.Error(err)
 		return

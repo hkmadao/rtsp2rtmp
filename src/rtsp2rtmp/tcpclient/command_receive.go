@@ -7,6 +7,7 @@ import (
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 )
 
@@ -20,7 +21,7 @@ func StartCommandReceiveServer() {
 }
 
 func commandReceiveConnect() {
-	conn, err := connectAndRegister("keepChannel", "")
+	conn, err := tcpclientcommon.ConnectAndKeepChannelRegister("keepChannel")
 	if err != nil {
 		logs.Error("keepChannel connect to server error: %v", err)
 		return
@@ -54,7 +55,7 @@ func commandReceiveConnect() {
 			}
 		}
 
-		// commandMessage := CommandMessage{}
+		// commandMessage := tcpclientcommon.CommandMessage{}
 		// err = json.Unmarshal(serverRepBytes, &commandMessage)
 		// if err != nil {
 		// 	logs.Error("message format error: %v", err)
@@ -71,7 +72,7 @@ func commandReceiveConnect() {
 			logs.Error("message DecryptAES error: %v", err)
 			continue
 		}
-		commandMessage := CommandMessage{}
+		commandMessage := tcpclientcommon.CommandMessage{}
 		err = json.Unmarshal(commandBytes, &commandMessage)
 		if err != nil {
 			logs.Error("message format error: %v", err)
@@ -83,7 +84,7 @@ func commandReceiveConnect() {
 	}
 }
 
-func commandRes(commandMessage CommandMessage) {
+func commandRes(commandMessage tcpclientcommon.CommandMessage) {
 	switch commandMessage.MessageType {
 	case "cameraAq":
 		cameraAq(commandMessage)

@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
-	"sync"
-	"time"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
@@ -13,22 +11,6 @@ import (
 	base_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/base"
 	ext_controller "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/ext"
 )
-
-var tokens sync.Map
-
-func ClearExipresToken() {
-	deleteTokens := []string{}
-	// 遍历所有sync.Map中的键值对
-	tokens.Range(func(k, v interface{}) bool {
-		if time.Now().After(v.(time.Time).Add(30 * time.Minute)) {
-			deleteTokens = append(deleteTokens, k.(string))
-		}
-		return true
-	})
-	for _, v := range deleteTokens {
-		tokens.Delete(v)
-	}
-}
 
 var webInstance *web
 

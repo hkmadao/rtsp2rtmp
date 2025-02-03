@@ -28,8 +28,8 @@ func main() {
 		logs.Error("get use-ffmpeg fail : %v", err)
 		fgUseFfmpeg = false
 	}
+	rtmpserver.GetSingleRtmpServer().StartRtmpServer()
 	if fgUseFfmpeg {
-		rtmpserver.GetSingleRtmpServer().StartRtmpServer()
 		ffmpegmanager.GetSingleFFmpegManager().StartClient()
 	} else {
 		rtspclientmanager.GetSingleRtspClientManager().StartClient()

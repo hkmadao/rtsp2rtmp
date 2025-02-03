@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	dto_convert "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/controller/convert"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dao/entity"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func historyVideoPage(commandMessage CommandMessage) {
-	conn, err := connectAndRegister("historyVideoPage", commandMessage.MessageId)
+func historyVideoPage(commandMessage tcpclientcommon.CommandMessage) {
+	conn, err := tcpclientcommon.ConnectAndResRegister("historyVideoPage", commandMessage.MessageId)
 	if err != nil {
 		logs.Error("historyVideoPage connect to server error: %v", err)
 		return
@@ -24,7 +25,7 @@ func historyVideoPage(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("historyVideoPage message format error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("historyVideoPage message format error: %v", err))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -36,7 +37,7 @@ func historyVideoPage(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("aqPage error : %v", err)
 		result := common.ErrorResult("CameraRecordFindPageByCondition error")
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -51,7 +52,7 @@ func historyVideoPage(commandMessage CommandMessage) {
 	if err != nil {
 		logs.Error("aqPage error: %v", err)
 		result := common.ErrorResult(fmt.Sprintf("ConvertCameraRecordToVOList error"))
-		_, err = writeResult(result, conn)
+		_, err = tcpclientcommon.WriteResult(result, conn)
 		if err != nil {
 			logs.Error(err)
 			return
@@ -64,7 +65,7 @@ func historyVideoPage(commandMessage CommandMessage) {
 	}
 	pageInfo.DataList = dataList
 	result := common.SuccessResultData(pageInfo)
-	_, err = writeResult(result, conn)
+	_, err = tcpclientcommon.WriteResult(result, conn)
 	if err != nil {
 		logs.Error(err)
 		return

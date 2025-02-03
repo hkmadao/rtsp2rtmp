@@ -2,7 +2,7 @@ server:
     use-ffmpeg: false 
     security: true
     rtmp:
-        port: 1936
+        port: 1934
     http:
         port: 8080
         static:

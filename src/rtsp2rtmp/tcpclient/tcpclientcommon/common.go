@@ -1,4 +1,4 @@
-package tcpclient
+package tcpclientcommon
 
 import (
 	"encoding/json"
@@ -25,12 +25,13 @@ type RegisterInfo struct {
 	ClientCode string `json:"clientCode"`
 	DateStr    string `json:"dateStr"`
 	Sign       string `json:"sign"`
-	// "keepChannel" "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
-	ConnType  string `json:"connType"`
-	MessageId string `json:"messageId"`
+	// "keepChannel" "cameraOnline" "cameraOffline" "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
+	ConnType   string `json:"connType"`
+	MessageId  string `json:"messageId"`
+	CameraCode string `json:"cameraCode"`
 }
 
-func newReisterInfo(connType string, messageId string) (ri RegisterInfo, err error) {
+func newReisterInfo(connType string, messageId string, cameraCode string) (ri RegisterInfo, err error) {
 	currentDateStr := time.Now().Format(time.RFC3339)
 	clientCode, err := config.String("server.remote.client-code")
 	if err != nil {
@@ -51,11 +52,24 @@ func newReisterInfo(connType string, messageId string) (ri RegisterInfo, err err
 		DateStr:    currentDateStr,
 		Sign:       signStr,
 		MessageId:  messageId,
+		CameraCode: cameraCode,
 	}
 	return
 }
 
-func connectAndRegister(connType string, messageId string) (conn net.Conn, err error) {
+func ConnectAndKeepChannelRegister(connType string) (conn net.Conn, err error) {
+	return connectAndRegister(connType, "", "")
+}
+
+func ConnectAndCameraStatusRegister(connType string, cameraCode string) (conn net.Conn, err error) {
+	return connectAndRegister(connType, "", cameraCode)
+}
+
+func ConnectAndResRegister(connType string, messageId string) (conn net.Conn, err error) {
+	return connectAndRegister(connType, messageId, "")
+}
+
+func connectAndRegister(connType string, messageId string, cameraCode string) (conn net.Conn, err error) {
 	serverIp, err := config.String("server.remote.server-ip")
 	if err != nil {
 		logs.Error("get remote server-ip error: %v. \n", err)
@@ -73,7 +87,7 @@ func connectAndRegister(connType string, messageId string) (conn net.Conn, err e
 	}
 
 	// register to server
-	ri, err := newReisterInfo(connType, messageId)
+	ri, err := newReisterInfo(connType, messageId, cameraCode)
 	if err != nil {
 		logs.Error(err)
 		return
@@ -94,7 +108,7 @@ func connectAndRegister(connType string, messageId string) (conn net.Conn, err e
 	return
 }
 
-func writeResult(result common.AppResult, writer io.Writer) (n int, err error) {
+func WriteResult(result common.AppResult, writer io.Writer) (n int, err error) {
 	messageBytes, err := json.Marshal(result)
 	if err != nil {
 		logs.Error(err)

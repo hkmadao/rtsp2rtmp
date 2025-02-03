@@ -2,11 +2,13 @@ package rtmpflvwriter
 
 import (
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtmp"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/camerastatuspush"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
@@ -19,6 +21,7 @@ type IRtmpFlvManager interface {
 type RtmpFlvWriter struct {
 	needPushRtmp  bool
 	stop          bool
+	fgDoneClose   bool
 	done          chan int
 	pktStream     <-chan av.Packet
 	code          string
@@ -28,6 +31,7 @@ type RtmpFlvWriter struct {
 	conn          *rtmp.Conn
 	pulseInterval time.Duration
 	irfm          IRtmpFlvManager
+	mutex         sync.Mutex
 }
 
 func (rfw *RtmpFlvWriter) GetDone() <-chan int {
@@ -59,6 +63,7 @@ func NewRtmpFlvWriter(needPushRtmp bool, pktStream <-chan av.Packet, code string
 	rfw := &RtmpFlvWriter{
 		needPushRtmp:  needPushRtmp,
 		stop:          false,
+		fgDoneClose:   false,
 		done:          make(chan int),
 		pktStream:     pktStream,
 		code:          code,
@@ -79,8 +84,17 @@ func (rfw *RtmpFlvWriter) StopWrite() {
 			}
 		}()
 		rfw.stop = true
-		close(rfw.done)
+		rfw.CloseDone()
 	}()
+}
+
+func (rfw *RtmpFlvWriter) CloseDone() {
+	rfw.mutex.Lock()
+	if !rfw.fgDoneClose {
+		rfw.fgDoneClose = true
+		close(rfw.done)
+	}
+	rfw.mutex.Unlock()
 }
 
 func (rfw *RtmpFlvWriter) createConn() error {
@@ -114,20 +128,37 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		logs.Error("not found camera : %s", rfw.code)
 		return
 	}
-	if camera.OnlineStatus != true {
+	if !camera.OnlineStatus {
 		return
 	}
-	if camera.RtmpPushStatus != true || !rfw.needPushRtmp {
+	defer rfw.CloseDone()
+	if camera.RtmpPushStatus && camera.FgPassive {
 		go func() {
+			defer func() {
+				camerastatuspush.CameraOfflinePush(camera.Code)
+			}()
+			camerastatuspush.CameraOnlinePush(camera.Code)
 			for {
 				select {
 				case <-rfw.GetDone():
 					return
-				case <-rfw.pktStream:
+				case <-time.NewTicker(1 * time.Second).C:
+					camerastatuspush.CameraOnlinePush(camera.Code)
 				}
 			}
 		}()
-		return
+	}
+	if !camera.RtmpPushStatus && !rfw.needPushRtmp {
+		for {
+			select {
+			case <-rfw.GetDone():
+				return
+			case _, ok := <-rfw.pktStream:
+				if !ok {
+					return
+				}
+			}
+		}
 	}
 
 	ticker := time.NewTicker(rfw.pulseInterval)
