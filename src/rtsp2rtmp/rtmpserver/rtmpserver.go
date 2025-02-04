@@ -95,7 +95,10 @@ func (r *rtmpServer) startRtmp() {
 		Addr:       ":" + strconv.Itoa(rtmpPort),
 		HandleConn: r.handleRtmpConn,
 	}
-	s.ListenAndServe()
+
+	if err := s.ListenAndServe(); err != nil {
+		logs.Error("encrypt rtmp ListenAndServe error: %v", err)
+	}
 }
 
 func (r *rtmpServer) handleRtmpConn(conn *rtmp.Conn) {

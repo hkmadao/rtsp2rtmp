@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/beego/beego/v2 v2.0.1
-	// github.com/deepch/vdk v0.0.0-20241120073805-439b6309323c //gitUrl v0.0.0-timestamp-commitId
+	// github.com/deepch/vdk v0.0.0-20241120073805-439b6309323c //gitUrl v0.0.0-timestamp-commitId //timestamp为0时区的时间，commitId为前12为
 	github.com/deepch/vdk v0.0.27
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-cmd/cmd v1.4.3
@@ -13,4 +13,4 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.1.0
 )
 
-replace github.com/deepch/vdk => github.com/hkmadao/vdk v0.0.0-20241127071358-df60b9bc5ae8
+replace github.com/deepch/vdk => github.com/hkmadao/vdk v0.0.0-20250204160314-c07ed611e735

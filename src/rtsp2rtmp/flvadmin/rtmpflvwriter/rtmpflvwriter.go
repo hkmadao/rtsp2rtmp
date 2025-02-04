@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/rtmp"
@@ -104,7 +105,23 @@ func (rfw *RtmpFlvWriter) createConn() error {
 		logs.Error("not found camera : %s", rfw.code)
 		return err
 	}
-	rtmpConn, err := rtmp.Dial(camera.RtmpUrl)
+	clientCode, err := config.String("server.remote.client-code")
+	if err != nil {
+		logs.Error("get remote client-code error: %v\n", err)
+		return err
+	}
+	signSecret, err := config.String("server.remote.sign-secret")
+	if err != nil {
+		logs.Error("get remote sign-secret error: %v\n", err)
+		return err
+	}
+	secretStr, err := config.String("server.remote.secret")
+	if err != nil {
+		logs.Error("get remote secret error: %v", err)
+		return err
+	}
+	proxyConnOption := rtmp.NewProxyConnOption(rtmp.AES, clientCode, signSecret, []byte(secretStr))
+	rtmpConn, err := rtmp.DialEncrypt(camera.RtmpUrl, proxyConnOption)
 	if err != nil {
 		logs.Error("rtmp client connection error : %v", err)
 		return err

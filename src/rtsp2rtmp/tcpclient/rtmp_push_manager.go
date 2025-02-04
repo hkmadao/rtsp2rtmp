@@ -8,6 +8,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/tcpclient/tcpclientcommon"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 type RtmpPushParam struct {
@@ -33,6 +34,26 @@ func startRtmpPush(commandMessage tcpclientcommon.CommandMessage) {
 			return
 		}
 		return
+	}
+	condition := common.GetEqualCondition("code", param.CameraCode)
+	camera, err := base_service.CameraFindOneByCondition(condition)
+	if err != nil {
+		logs.Error("startPushRtmp: find camera: %s error: %v", param.CameraCode, err)
+		result := common.ErrorResult(fmt.Sprintf("startPushRtmp: find camera: %s error: %v", param.CameraCode, err))
+		_, err = tcpclientcommon.WriteResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+	}
+	if !camera.FgPassive {
+		logs.Error("startPushRtmp: camera: %s fgPassive is false", param.CameraCode)
+		result := common.ErrorResult(fmt.Sprintf("startPushRtmp: camera: %s fgPassive is false", param.CameraCode))
+		_, err = tcpclientcommon.WriteResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
 	}
 	flvadmin.GetSingleRtmpFlvAdmin().RemoteStartWrite(param.CameraCode)
 
@@ -63,6 +84,26 @@ func stopRtmpPush(commandMessage tcpclientcommon.CommandMessage) {
 			return
 		}
 		return
+	}
+	condition := common.GetEqualCondition("code", param.CameraCode)
+	camera, err := base_service.CameraFindOneByCondition(condition)
+	if err != nil {
+		logs.Error("stopPushRtmp: find camera: %s error: %v", param.CameraCode, err)
+		result := common.ErrorResult(fmt.Sprintf("stopPushRtmp: find camera: %s error: %v", param.CameraCode, err))
+		_, err = tcpclientcommon.WriteResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+	}
+	if !camera.FgPassive {
+		logs.Error("stopPushRtmp: camera: %s fgPassive is false", param.CameraCode)
+		result := common.ErrorResult(fmt.Sprintf("stopPushRtmp: camera: %s fgPassive is false", param.CameraCode))
+		_, err = tcpclientcommon.WriteResult(result, conn)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
 	}
 	flvadmin.GetSingleRtmpFlvAdmin().RemoteStopWrite(param.CameraCode)
 
