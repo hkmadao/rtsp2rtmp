@@ -24,6 +24,8 @@ type CameraRecordPO struct {
 	StartTime time.Time `json:"startTime"`
 	// 结束时间:
 	EndTime time.Time `json:"endTime"`
+	// 是否有音频
+	HasAudio bool `json:"hasAudio"`
 	// 摄像头主属性:
 	IdCamera string `json:"idCamera"`
 	// 摄像头:

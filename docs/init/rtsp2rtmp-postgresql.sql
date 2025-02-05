@@ -59,7 +59,7 @@ CREATE TABLE public.camera_record (
 	start_time timestamp NULL, -- 开始时间
 	end_time timestamp NULL, -- 结束时间
 	id_camera varchar(255) NOT NULL, -- 摄像头主属性
-	has_audio bool NULL, -- 是否有音频
+	has_audio bool NULL DEFAULT true, -- 是否有音频
 	CONSTRAINT pk_camera_record PRIMARY KEY (id_camera_record)
 );
 COMMENT ON TABLE public.camera_record IS '摄像头记录';

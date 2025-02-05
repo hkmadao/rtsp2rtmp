@@ -14,6 +14,7 @@ import (
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/vo/ext/flv_file"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
@@ -113,13 +114,17 @@ func HttpFlvVODFileDuration(ctx *gin.Context) {
 		return
 	}
 
-	duration, err := fileflvreader.FlvDurationReadUntilErr(fileName)
+	durationInt, err := fileflvreader.FlvDurationReadUntilErr(fileName)
+	mediaInfo := flv_file.FlvMediaInfo{
+		Duration: uint32(durationInt),
+		HasAudio: true,
+	}
 	if err != nil {
-		logs.Error("file: %s get duration error", fileName)
+		logs.Error("file: %s get mediaInfo error", fileName)
 		http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	result := common.SuccessResultData(duration)
+	result := common.SuccessResultData(mediaInfo)
 	ctx.JSON(http.StatusOK, result)
 }
 

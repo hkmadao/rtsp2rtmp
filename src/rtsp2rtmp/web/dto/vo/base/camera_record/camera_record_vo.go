@@ -24,6 +24,8 @@ type CameraRecordVO struct {
 	StartTime time.Time `json:"startTime"`
 	// 结束时间:
 	EndTime time.Time `json:"endTime"`
+	// 是否有音频
+	HasAudio bool `json:"hasAudio"`
 	// 摄像头主属性:
 	IdCamera string `json:"idCamera"`
 	// 摄像头:
@@ -52,4 +54,12 @@ type CameraVO struct {
 	Live bool `json:"live"`
 	// 创建时间:
 	Created time.Time `json:"created"`
+	// 加密标志:
+	FgEncrypt bool `json:"fgEncrypt"`
+	// 被动推送rtmp标志
+	FgPassive bool `json:"fgPassive"`
+	// rtmp识别码:
+	RtmpAuthCode string `json:"rtmpAuthCode"`
+	// 摄像头类型:
+	CameraType string `json:"cameraType"`
 }

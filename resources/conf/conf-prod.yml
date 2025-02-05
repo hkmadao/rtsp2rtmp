@@ -7,7 +7,7 @@ server:
         port: 8080
         static:
             path: ./resources/static
-        use-https: true
+        use-https: false
         cert:
             private-key-path: ./resources/conf/cert/private_key.pem
             cert-path: ./resources/conf/cert/certificate.crt

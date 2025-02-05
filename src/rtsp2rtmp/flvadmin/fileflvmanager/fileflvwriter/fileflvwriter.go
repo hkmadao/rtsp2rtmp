@@ -241,6 +241,7 @@ func (ffw *FileFlvWriter) flvWrite() {
 				FgTemp:         true,
 				FgRemove:       false,
 				Duration:       0,
+				HasAudio:       hasAudio(ffw.codecs),
 			}
 			_, err = base_service.CameraRecordCreate(cameraRecord)
 			if err != nil {
@@ -253,6 +254,15 @@ func (ffw *FileFlvWriter) flvWrite() {
 			logs.Error("FileFlvWriter ingrore package: %s", ffw.code)
 		}
 	}
+}
+
+func hasAudio(streams []av.CodecData) bool {
+	for _, stream := range streams {
+		if stream.Type().IsAudio() {
+			return true
+		}
+	}
+	return false
 }
 
 func (ffw *FileFlvWriter) writeScriptTagData() {
