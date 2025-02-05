@@ -116,6 +116,29 @@ func (w *web) webRun() {
 		logs.Error("get httpflv port error: %v. \n use default port : 9090", err)
 		port = 9090
 	}
+	fgUseHttps, err := config.Bool("server.http.use-https")
+	if err != nil {
+		logs.Error("get httpflv use-https error: %v", err)
+		return
+	}
+	if fgUseHttps {
+		certificatePath, err := config.String("server.http.cert.cert-path")
+		if err != nil {
+			logs.Error("get httpflv cert-path error: %v", err)
+			return
+		}
+		keyPath, err := config.String("server.http.cert.private-key-path")
+		if err != nil {
+			logs.Error("get httpflv private-key-path error: %v", err)
+			return
+		}
+		logs.Info("use certificatePath: %s, keyPath: %s", certificatePath, keyPath)
+		err = router.RunTLS(":"+strconv.Itoa(port), certificatePath, keyPath)
+		if err != nil {
+			logs.Error("Start HTTPS Server error", err)
+		}
+		return
+	}
 	err = router.Run(":" + strconv.Itoa(port))
 	if err != nil {
 		logs.Error("Start HTTP Server error", err)
