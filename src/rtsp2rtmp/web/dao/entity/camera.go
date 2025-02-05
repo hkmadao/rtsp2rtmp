@@ -28,9 +28,7 @@ type Camera struct {
 	// 创建时间:
 	Created time.Time `orm:"column(created)" json:"created"`
 	// 加密标志:
-	FgSecret bool `orm:"column(fg_secret)" json:"fgSecret"`
-	// 密钥:
-	Secret string `orm:"column(secret)" json:"secret"`
+	FgEncrypt bool `orm:"column(fg_encrypt)" json:"fgEncrypt"`
 	// 被动推送rtmp标志
 	FgPassive bool `orm:"column(fg_passive)" json:"fgPassive"`
 	// rtmp识别码:

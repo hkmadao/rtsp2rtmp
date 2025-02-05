@@ -89,19 +89,12 @@ func GetCameraDesc() *common.EntityDesc {
         DataType: "DateTime",
 				ValueType: "DateTime",
     };
-    var fgSecretAttributeInfo = &common.AttributeInfo {
-        ColumnName: "fg_secret",
-        Name: "fgSecret",
+    var fgEncryptAttributeInfo = &common.AttributeInfo {
+        ColumnName: "fg_encrypt",
+        Name: "fgEncrypt",
         DisplayName: "加密标志",
         DataType: "Boolean",
 				ValueType: "bool",
-    };
-    var secretAttributeInfo = &common.AttributeInfo {
-        ColumnName: "secret",
-        Name: "secret",
-        DisplayName: "密钥",
-        DataType: "String",
-				ValueType: "string",
     };
     var fgPassiveAttributeInfo = &common.AttributeInfo {
         ColumnName: "fg_passive",
@@ -159,8 +152,7 @@ func GetCameraDesc() *common.EntityDesc {
           "saveVideo": saveVideoAttributeInfo,
           "live": liveAttributeInfo,
           "created": createdAttributeInfo,
-          "fgSecret": fgSecretAttributeInfo,
-          "secret": secretAttributeInfo,
+          "fgEncrypt": fgEncryptAttributeInfo,
           "fgPassive": fgPassiveAttributeInfo,
           "rtmpAuthCode": rtmpAuthCodeAttributeInfo,
           "cameraType": cameraTypeAttributeInfo,

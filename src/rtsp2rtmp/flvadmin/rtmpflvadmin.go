@@ -32,7 +32,7 @@ func (rfm *RtmpFlvAdmin) FlvWrite(pktStream <-chan av.Packet, code string, codec
 		logs.Error("FlvWrite found camera: %s error: %v, do painc", code, err)
 		panic(fmt.Sprintf("FlvWrite found camera: %s error: %v", code, err))
 	}
-	rfw := rtmpflvwriter.NewRtmpFlvWriter(!camera.FgPassive, pktStream, code, codecs, rfm)
+	rfw := rtmpflvwriter.NewRtmpFlvWriter(!camera.FgPassive, pktStream, code, codecs, rfm, 0)
 	rfm.rfms.Store(code, rfw)
 }
 
@@ -41,7 +41,7 @@ func (rfm *RtmpFlvAdmin) StartWrite(code string, needPushRtmp bool) {
 	if ok {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		rfw.StopWrite()
-		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(needPushRtmp, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
+		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(needPushRtmp, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm, 0)
 		rfm.rfms.Store(code, rfwNew)
 	}
 }
@@ -51,7 +51,7 @@ func (rfm *RtmpFlvAdmin) ReConntion(code string) {
 	if ok {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		rfw.StopWrite()
-		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(rfw.GetNeedPushRtmp(), rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
+		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(rfw.GetNeedPushRtmp(), rfw.GetPktStream(), code, rfw.GetCodecs(), rfm, 0)
 		rfm.rfms.Store(code, rfwNew)
 	}
 }
@@ -62,7 +62,7 @@ func (rfm *RtmpFlvAdmin) RemoteStartWrite(code string) {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		if !rfw.GetNeedPushRtmp() {
 			rfw.StopWrite()
-			rfwNew := rtmpflvwriter.NewRtmpFlvWriter(true, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
+			rfwNew := rtmpflvwriter.NewRtmpFlvWriter(true, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm, 0)
 			rfm.rfms.Store(code, rfwNew)
 		}
 	}
@@ -73,7 +73,7 @@ func (rfm *RtmpFlvAdmin) RemoteStopWrite(code string) {
 	if ok {
 		rfw := v.(*rtmpflvwriter.RtmpFlvWriter)
 		rfw.StopWrite()
-		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(false, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm)
+		rfwNew := rtmpflvwriter.NewRtmpFlvWriter(false, rfw.GetPktStream(), code, rfw.GetCodecs(), rfm, 0)
 		rfm.rfms.Store(code, rfwNew)
 	}
 }

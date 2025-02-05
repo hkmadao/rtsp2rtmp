@@ -33,6 +33,7 @@ type RtmpFlvWriter struct {
 	pulseInterval time.Duration
 	irfm          IRtmpFlvManager
 	mutex         sync.Mutex
+	reConnCount   int64
 }
 
 func (rfw *RtmpFlvWriter) GetDone() <-chan int {
@@ -60,7 +61,7 @@ func (rfw *RtmpFlvWriter) GetNeedPushRtmp() bool {
 	return rfw.needPushRtmp
 }
 
-func NewRtmpFlvWriter(needPushRtmp bool, pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager) *RtmpFlvWriter {
+func NewRtmpFlvWriter(needPushRtmp bool, pktStream <-chan av.Packet, code string, codecs []av.CodecData, irfm IRtmpFlvManager, reConnCount int64) *RtmpFlvWriter {
 	rfw := &RtmpFlvWriter{
 		needPushRtmp:  needPushRtmp,
 		stop:          false,
@@ -72,6 +73,7 @@ func NewRtmpFlvWriter(needPushRtmp bool, pktStream <-chan av.Packet, code string
 		start:         false,
 		pulseInterval: 5 * time.Second,
 		irfm:          irfm,
+		reConnCount:   reConnCount,
 	}
 	go rfw.flvWrite()
 	return rfw
@@ -120,7 +122,12 @@ func (rfw *RtmpFlvWriter) createConn() error {
 		logs.Error("get remote secret error: %v", err)
 		return err
 	}
-	proxyConnOption := rtmp.NewProxyConnOption(rtmp.AES, clientCode, signSecret, []byte(secretStr))
+	var proxyConnOption rtmp.ProxyConnOption
+	if camera.FgEncrypt {
+		proxyConnOption = rtmp.NewProxyConnOption(rtmp.AES, clientCode, signSecret, []byte(secretStr))
+	} else {
+		proxyConnOption = rtmp.NewUnEncryptProxyConnOption()
+	}
 	rtmpConn, err := rtmp.DialEncrypt(camera.RtmpUrl, proxyConnOption)
 	if err != nil {
 		logs.Error("rtmp client connection error : %v", err)
@@ -190,9 +197,23 @@ func (rfw *RtmpFlvWriter) flvWrite() {
 		}
 		_, pktStreamOk := <-rfw.pktStream
 		if pktStreamOk {
-			logs.Info("to create NewRtmpFlvWriter : %s", rfw.code)
-			rfwn := NewRtmpFlvWriter(true, rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm)
-			rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
+			reConnDuration := time.Duration(rfw.reConnCount) * time.Duration(10) * time.Second
+			if reConnDuration > (10 * time.Minute) {
+				reConnDuration = 10 * time.Minute
+			}
+			if reConnDuration > 0 {
+				<-time.NewTicker(reConnDuration).C
+			}
+			if rfw.stop {
+				logs.Info("stop RtmpFlvWriter : %s", rfw.code)
+				return
+			}
+			_, pktStreamOk := <-rfw.pktStream
+			if pktStreamOk {
+				logs.Info("to create NewRtmpFlvWriter : %s", rfw.code)
+				rfwn := NewRtmpFlvWriter(true, rfw.pktStream, rfw.code, rfw.codecs, rfw.irfm, rfw.reConnCount+1)
+				rfwn.irfm.UpdateFFWS(rfwn.code, rfwn)
+			}
 		} else {
 			logs.Info("RtmpFlvWriter pktStream is closed : %s", rfw.code)
 		}
@@ -235,9 +256,13 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 			return err
 		}
 		var err error
+		// setDeadline
+		rfw.conn.NetConn().SetDeadline(time.Now().Add(10 * time.Second))
 		err = rfw.conn.WriteHeader(rfw.codecs)
+		// clear Deadline
+		rfw.conn.NetConn().SetDeadline(time.Time{})
 		rfw.startTime = time.Now()
-		logs.Info("KeyFrame WriteHeader to rtmp server : %s, codesc: %v", rfw.code, rfw.codecs)
+		// logs.Info("KeyFrame WriteHeader to rtmp server : %s, codesc: %v", rfw.code, rfw.codecs)
 		if err != nil {
 			logs.Error("writer header to rtmp server error : %v", err)
 			return err

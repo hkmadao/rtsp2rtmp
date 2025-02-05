@@ -96,7 +96,7 @@ func CameraSelectByIds(ids []string) (models []entity.Camera, err error) {
 	// execute the raw query string
 	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
 	if err_query != nil {
-		err = fmt.Errorf("selectByIds error: %v", err_make_sql)
+		err = fmt.Errorf("selectByIds error: %v", err_query)
 		return
 	}
 
@@ -118,7 +118,7 @@ func CameraFindCollectionByCondition(condition common.AqCondition) (models []ent
 	// execute the raw query string
 	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
 	if err_query != nil {
-		err = fmt.Errorf("findCollectionByCondition error: %v", err_make_sql)
+		err = fmt.Errorf("findCollectionByCondition error: %v", err_query)
 		return
 	}
 	return
@@ -140,7 +140,7 @@ func CameraFindOneByCondition(condition common.AqCondition) (model entity.Camera
 	models := make([]entity.Camera, 0)
 	_, err_query := o.Raw(sqlStr, params...).QueryRows(&models)
 	if err_query != nil {
-		err = fmt.Errorf("findOneByCondition error: %v", err_make_sql)
+		err = fmt.Errorf("findOneByCondition error: %v", err_query)
 		return
 	}
 	if len(models) < 1 {
@@ -184,7 +184,7 @@ func CameraFindPageByCondition(aqPageInfoInput common.AqPageInfoInput) (pageInfo
 	models := make([]entity.Camera, 0)
 	_, err_query := o.Raw(pageSqlStr, params...).QueryRows(&models)
 	if err_query != nil {
-		err = fmt.Errorf("findPageByCondition error: %v", err_make_sql)
+		err = fmt.Errorf("findPageByCondition error: %v", err_query)
 		return
 	}
 	dataList := make([]interface{}, 0)

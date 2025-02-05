@@ -29,9 +29,7 @@ type CameraVO struct {
 	// 创建时间:
 	Created time.Time `json:"created"`
 	// 加密标志:
-	FgSecret bool `json:"fgSecret"`
-	// 密钥:
-	Secret string `json:"secret"`
+	FgEncrypt bool `json:"fgEncrypt"`
 	// 被动推送rtmp标志
 	FgPassive bool `json:"fgPassive"`
 	// rtmp识别码:
