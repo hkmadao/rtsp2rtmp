@@ -100,6 +100,8 @@ func commandRes(commandMessage tcpclientcommon.CommandMessage) {
 		startRtmpPush(commandMessage)
 	case "stopPushRtmp":
 		stopRtmpPush(commandMessage)
+	case "getLiveMediaInfo":
+		getLiveMediaInfo(commandMessage)
 	default:
 		logs.Error("unsupport commandType: %s", commandMessage.MessageType)
 	}

@@ -14,7 +14,7 @@ import (
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
-func CameraRecordFileDuration(ctx *gin.Context) {
+func CameraRecordFileMediaInfo(ctx *gin.Context) {
 	defer func() {
 		if result := recover(); result != nil {
 			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))

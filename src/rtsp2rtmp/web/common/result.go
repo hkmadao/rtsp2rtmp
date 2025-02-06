@@ -1,5 +1,7 @@
 package common
 
+import "errors"
+
 type AppResult struct {
 	Status  uint32      `json:"status"`
 	Message string      `json:"message"`
@@ -31,6 +33,10 @@ type DeleteRefErrorMessageVO struct {
 	RefClassName string `json:"refClassName"`
 }
 
+func (appResult *AppResult) IsFailed() bool {
+	return appResult.Status != 0
+}
+
 func ErrorResult(msg string) AppResult {
 	return AppResult{Status: 1, Message: msg}
 }
@@ -45,4 +51,28 @@ func SuccessResultMsg(msg string) AppResult {
 
 func SuccessResultWithMsg(msg string, data interface{}) AppResult {
 	return AppResult{Status: 0, Message: msg, Data: data}
+}
+
+type Rtmp2FlvCustomError struct {
+	kind int
+	err  error
+}
+
+func CustomError(errMsg string) *Rtmp2FlvCustomError {
+	return &Rtmp2FlvCustomError{kind: 0, err: errors.New(errMsg)}
+}
+
+func InternalError(err error) *Rtmp2FlvCustomError {
+	if err == nil {
+		panic("err param is nil")
+	}
+	return &Rtmp2FlvCustomError{kind: 1, err: err}
+}
+
+func (ce *Rtmp2FlvCustomError) IsCustomError() bool {
+	return ce.kind == 0
+}
+
+func (ce *Rtmp2FlvCustomError) Error() string {
+	return ce.err.Error()
 }

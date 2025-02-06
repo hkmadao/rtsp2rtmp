@@ -42,8 +42,9 @@ func (w *web) webRun() {
 	router.POST("/login", ext_controller.Login)
 	router.POST("/logout", ext_controller.Logout)
 
+	router.GET("/live/getMediaInfo/:method/:code/:authCode.flv", ext_controller.HttpFlvPlayMediaInfo)
 	router.GET("/live/:method/:code/:authCode.flv", ext_controller.HttpFlvPlay)
-	router.GET("/vod/getDuration/:fileName", ext_controller.HttpFlvVODFileDuration)
+	router.GET("/vod/getMediaInfo/:fileName", ext_controller.HttpFlvVODFileMediaInfo)
 	router.GET("/vod/start/:fileName", ext_controller.HttpFlvVODStart)
 	router.GET("/vod/fetch", ext_controller.HttpFlvVODFetch)
 	router.GET("/vod/getFileList", ext_controller.CameraGetRecordFiles)
@@ -99,7 +100,7 @@ func (w *web) webRun() {
 	router.GET("/cameraRecord/getByIds", base_controller.CameraRecordGetByIds)
 	router.POST("/cameraRecord/aq", base_controller.CameraRecordAq)
 	router.POST("/cameraRecord/aqPage", base_controller.CameraRecordAqPage)
-	router.GET("/cameraRecord/getDuration/:idCameraRecord", ext_controller.CameraRecordFileDuration)
+	router.GET("/cameraRecord/getMediaInfo/:idCameraRecord", ext_controller.CameraRecordFileMediaInfo)
 	router.GET("/cameraRecord/start/:idCameraRecord", ext_controller.CameraRecordFilePlay)
 	router.GET("/cameraRecord/fetch", ext_controller.CameraRecordFileFetch)
 

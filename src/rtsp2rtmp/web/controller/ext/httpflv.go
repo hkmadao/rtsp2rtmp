@@ -13,12 +13,113 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvreader"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/dto/vo/ext/flv_file"
 	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 var playerMap sync.Map
+
+func HttpFlvPlayMediaInfo(ctx *gin.Context) {
+	defer func() {
+		if result := recover(); result != nil {
+			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))
+		}
+	}()
+	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.Writer.Header().Set("Connection", "keep-alive")
+
+	method, ok := ctx.Params.Get("method")
+	if !ok || method == "" {
+		logs.Error("path param method is rquired")
+		result := common.ErrorResult("path param method is rquired")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+
+	code, ok := ctx.Params.Get("code")
+	if !ok || code == "" {
+		logs.Error("path param code is rquired")
+		result := common.ErrorResult("path param code is rquired")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+
+	authCode, ok := ctx.Params.Get("authCode.flv")
+	if !ok || authCode == "" {
+		logs.Error("path param authCode is rquired")
+		result := common.ErrorResult("path param authCode is rquired")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	authCode = utils.ReverseString(strings.Replace(utils.ReverseString(authCode), utils.ReverseString(".flv"), "", 1))
+
+	conditon := common.GetEqualCondition("code", code)
+	camera, err := base_service.CameraFindOneByCondition(conditon)
+	if err != nil {
+		logs.Error("camera query error : %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+
+	if !(method == "temp" || method == "permanent") {
+		logs.Error("method error : %s", method)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	if method == "temp" {
+		var filters = []common.EqualFilter{{Name: "cameraId", Value: camera.Id}, {Name: "authCode", Value: authCode}}
+		condition := common.GetEqualConditions(filters)
+
+		exists, err := base_service.CameraShareExistsByCondition(condition)
+		if err != nil {
+			logs.Error("cameraShareExistsByCondition error : %v", err)
+			result := common.ErrorResult("internal error")
+			ctx.JSON(http.StatusOK, result)
+			return
+		}
+		if !exists {
+			logs.Error("camera [%s] AuthCodeTemp expired : %s", camera.Code, authCode)
+			result := common.ErrorResult("auth error")
+			ctx.JSON(http.StatusOK, result)
+			return
+		}
+
+		cs, err := base_service.CameraShareFindOneByCondition(condition)
+		if err != nil {
+			logs.Error("CameraShareSelectOne error : %v", err)
+			result := common.ErrorResult("internal error")
+			ctx.JSON(http.StatusOK, result)
+			return
+		}
+		if time.Now().Before(cs.StartTime) || time.Now().After(cs.Deadline) {
+			logs.Error("camera [%s] AuthCodeTemp expired : %s", camera.Code, authCode)
+			result := common.ErrorResult("auth error")
+			ctx.JSON(http.StatusOK, result)
+			return
+		}
+
+	}
+	if method == "permanent" && authCode != camera.PlayAuthCode {
+		logs.Error("AuthCodePermanent error : %s", authCode)
+		result := common.ErrorResult("auth error")
+		ctx.JSON(http.StatusBadRequest, result)
+		return
+	}
+
+	liveMediaInfo, err := flvadmin.GetSingleHttpFlvAdmin().GetLiveInfo(camera.Code)
+	if err != nil {
+		logs.Error("getLiveInfo error : %v", err)
+		result := common.ErrorResult("internal error")
+		ctx.JSON(http.StatusOK, result)
+		return
+	}
+	result := common.SuccessResultData(liveMediaInfo)
+	ctx.JSON(http.StatusOK, result)
+}
 
 func HttpFlvPlay(ctx *gin.Context) {
 	defer func() {
@@ -28,15 +129,28 @@ func HttpFlvPlay(ctx *gin.Context) {
 	}()
 	ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.Writer.Header().Set("Connection", "keep-alive")
-	uri := strings.TrimSuffix(strings.TrimLeft(ctx.Request.RequestURI, "/"), ".flv")
-	uris := strings.Split(uri, "/")
-	if len(uris) < 3 || uris[0] != "live" {
-		http.Error(ctx.Writer, "invalid path", http.StatusBadRequest)
+
+	method, ok := ctx.Params.Get("method")
+	if !ok || method == "" {
+		logs.Error("path param method is rquired")
+		http.Error(ctx.Writer, "path param method is rquired", http.StatusBadRequest)
 		return
 	}
-	method := uris[1]
-	code := uris[2]
-	authCode := uris[3]
+
+	code, ok := ctx.Params.Get("code")
+	if !ok || code == "" {
+		logs.Error("path param code is rquired")
+		http.Error(ctx.Writer, "path param code is rquired", http.StatusBadRequest)
+		return
+	}
+
+	authCode, ok := ctx.Params.Get("authCode.flv")
+	if !ok || authCode == "" {
+		logs.Error("path param authCode is rquired")
+		http.Error(ctx.Writer, "path param authCode is rquired", http.StatusBadRequest)
+		return
+	}
+	authCode = utils.ReverseString(strings.Replace(utils.ReverseString(authCode), utils.ReverseString(".flv"), "", 1))
 
 	conditon := common.GetEqualCondition("code", code)
 	camera, err := base_service.CameraFindOneByCondition(conditon)
@@ -55,8 +169,22 @@ func HttpFlvPlay(ctx *gin.Context) {
 	if method == "temp" {
 		var filters = []common.EqualFilter{{Name: "cameraId", Value: camera.Id}, {Name: "authCode", Value: authCode}}
 		condition := common.GetEqualConditions(filters)
-		cs, err := base_service.CameraShareFindOneByCondition(condition)
 
+		exists, err := base_service.CameraShareExistsByCondition(condition)
+		if err != nil {
+			logs.Error("cameraShareExistsByCondition error : %v", err)
+			result := common.ErrorResult("internal error")
+			ctx.JSON(http.StatusBadRequest, result)
+			return
+		}
+		if !exists {
+			logs.Error("camera [%s] AuthCodeTemp expired : %s", camera.Code, authCode)
+			result := common.ErrorResult("auth error")
+			ctx.JSON(http.StatusBadRequest, result)
+			return
+		}
+
+		cs, err := base_service.CameraShareFindOneByCondition(condition)
 		if err != nil {
 			logs.Error("CameraShareSelectOne error : %v", err)
 			result := common.ErrorResult("internal error")
@@ -83,9 +211,15 @@ func HttpFlvPlay(ctx *gin.Context) {
 	playerDone := make(chan int)
 	defer close(playerDone)
 	const timeout = 10 * time.Second
-	flvPlayerDone, err := flvadmin.GetSingleHttpFlvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, ctx.Writer)
-	if err != nil {
-		logs.Error("camera [%s] add player error : %s", code, err)
+	flvPlayerDone, addHttpFlvPlayerErr := flvadmin.GetSingleHttpFlvAdmin().AddHttpFlvPlayer(playerDone, timeout/2, code, ctx.Writer)
+	if addHttpFlvPlayerErr != nil {
+		logs.Error("camera [%s] add player error : %v", code, addHttpFlvPlayerErr)
+		if addHttpFlvPlayerErr.IsCustomError() {
+			result := common.ErrorResult(addHttpFlvPlayerErr.Error())
+			ctx.JSON(http.StatusBadRequest, result)
+			return
+		}
+
 		result := common.ErrorResult("internal error")
 		ctx.JSON(http.StatusBadRequest, result)
 		return
@@ -94,7 +228,7 @@ func HttpFlvPlay(ctx *gin.Context) {
 	logs.Info("player [%s] addr [%s] exit", code, ctx.Request.RemoteAddr)
 }
 
-func HttpFlvVODFileDuration(ctx *gin.Context) {
+func HttpFlvVODFileMediaInfo(ctx *gin.Context) {
 	defer func() {
 		if result := recover(); result != nil {
 			logs.Error("system painc : %v \nstack : %v", result, string(debug.Stack()))

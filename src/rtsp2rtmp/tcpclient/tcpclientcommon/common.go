@@ -14,7 +14,7 @@ import (
 )
 
 type CommandMessage struct {
-	// "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
+	// "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp" "getLiveMediaInfo"
 	MessageType string `json:"messageType"`
 	Param       string `json:"param"`
 	MessageId   string `json:"messageId"`
@@ -25,7 +25,7 @@ type RegisterInfo struct {
 	ClientCode string `json:"clientCode"`
 	DateStr    string `json:"dateStr"`
 	Sign       string `json:"sign"`
-	// "keepChannel" "cameraOnline" "cameraOffline" "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp"
+	// "keepChannel" "cameraOnline" "cameraOffline" "cameraAq" "historyVideoPage" "flvFileMediaInfo" "flvPlay" "flvFetchMoreData" "startPushRtmp" "stopPushRtmp" "getLiveMediaInfo"
 	ConnType   string `json:"connType"`
 	MessageId  string `json:"messageId"`
 	CameraCode string `json:"cameraCode"`
