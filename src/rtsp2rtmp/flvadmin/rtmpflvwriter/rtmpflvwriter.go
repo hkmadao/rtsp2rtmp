@@ -268,7 +268,11 @@ func (rfw *RtmpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 			return err
 		}
 		logs.Info("KeyFrame WriteHeader to rtmp server success : %s", rfw.code)
+		// setDeadline
+		rfw.conn.NetConn().SetDeadline(time.Now().Add(10 * time.Second))
 		err = rfw.conn.WritePacket(pkt)
+		// clear Deadline
+		rfw.conn.NetConn().SetDeadline(time.Time{})
 		if err != nil {
 			logs.Error("writer packet to rtmp server error : %v", err)
 			return err
