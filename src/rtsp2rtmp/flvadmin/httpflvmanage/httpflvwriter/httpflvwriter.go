@@ -8,7 +8,6 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/deepch/vdk/format/flv"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
 )
 
@@ -81,27 +80,6 @@ func NewHttpFlvWriter(
 		start:             false,
 	}
 
-	camera, err := models.CameraSelectOne(models.Camera{Code: code})
-	if err != nil {
-		logs.Error("query camera error : %v", err)
-		return hfw
-	}
-	if camera.OnlineStatus != 1 {
-		return hfw
-	}
-	if camera.Live != 1 {
-		go func() {
-			for {
-				select {
-				case <-hfw.GetDone():
-					return
-				case <-hfw.pktStream:
-				}
-			}
-		}()
-		return hfw
-	}
-
 	go hfw.httpWrite()
 	return hfw
 }
@@ -115,6 +93,7 @@ func (hfw *HttpFlvWriter) httpWrite() {
 
 	ticker := time.NewTicker(hfw.pulseInterval)
 	defer func() {
+		hfw.ihfm.DeleteHFW(hfw.sessionId)
 		close(hfw.done)
 	}()
 	pktStream := utils.OrDonePacket(hfw.playerDone, hfw.pktStream)
@@ -191,7 +170,7 @@ func (hfw *HttpFlvWriter) writerPacket(pkt av.Packet, templateTime *time.Time) e
 	return nil
 }
 
-//Write extends to io.Writer
+// Write extends to io.Writer
 func (hfw *HttpFlvWriter) Write(p []byte) (n int, err error) {
 	// start := time.Now()
 	defer func() {

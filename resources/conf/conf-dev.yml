@@ -1,11 +1,16 @@
 server:
-    user:
-        name: admin
-        password: admin
+    use-ffmpeg: false 
+    security: true
+    rtmp:
+        port: 1934
     http:
         port: 8080
         static:
-            path: D:\development\project\rtsp2rtmp-web\build
+            path: ./resources/static
+        use-https: true
+        cert:
+            private-key-path: ./resources/conf/cert/private_key.pem
+            cert-path: ./resources/conf/cert/certificate.crt
     fileflv:
         path: ./resources/output/live
     log:
@@ -16,4 +21,13 @@ server:
         driver: postgres
         url: user=postgres password=123456 dbname=rtsp2rtmp host=localhost port=5432 sslmode=disable TimeZone=UTC
         show-sql: false
+    token:
+        duration: 1440
+    remote:
+        server-ip: 127.0.0.1
+        port: 9089
+        client-code: demo
+        sign-secret: A012345678901234
+        secret: A012345678901234
+    
         

@@ -8,8 +8,9 @@ import (
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/deepch/vdk/av"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/flvadmin/fileflvmanager/fileflvwriter"
-	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/models"
 	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/utils"
+	"github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/common"
+	base_service "github.com/hkmadao/rtsp2rtmp/src/rtsp2rtmp/web/service/base"
 )
 
 type FileFlvManager struct {
@@ -54,15 +55,16 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		code:        code,
 		codecs:      codecs,
 	}
-	camera, err := models.CameraSelectOne(models.Camera{Code: code})
+	condition := common.GetEqualCondition("code", code)
+	camera, err := base_service.CameraFindOneByCondition(condition)
 	if err != nil {
 		logs.Error("query camera error : %v", err)
 		return ffm
 	}
-	if camera.OnlineStatus != 1 {
+	if camera.OnlineStatus != true {
 		return ffm
 	}
-	if camera.SaveVideo != 1 {
+	if camera.SaveVideo != true {
 		go func() {
 			for {
 				select {
@@ -92,7 +94,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 					return true
 				})
 				sessionId := utils.NextValSnowflakeID()
-				//添加缓冲，减少包到达速率震荡导致丢包
+				//添加缓冲
 				pktStream := make(chan av.Packet, 1024)
 				newFfw := fileflvwriter.NewFileFlvWriter(sessionId, pktStream, code, ffm.codecs, ffm)
 				ffm.ffws.Store(sessionId, newFfw)
@@ -100,7 +102,7 @@ func NewFileFlvManager(pktStream <-chan av.Packet, code string, codecs []av.Code
 		}
 	}()
 	sessionId := utils.NextValSnowflakeID()
-	//添加缓冲，减少包到达速率震荡导致丢包
+	//添加缓冲
 	ffwPktStream := make(chan av.Packet, 1024)
 	newFfw := fileflvwriter.NewFileFlvWriter(sessionId, ffwPktStream, code, codecs, ffm)
 	ffm.ffws.Store(sessionId, newFfw)
@@ -120,7 +122,7 @@ func (ffm *FileFlvManager) StopWrite() {
 	}()
 }
 
-//Write extends to writer.Writer
+// Write extends to writer.Writer
 func (ffm *FileFlvManager) flvWrite() {
 	defer func() {
 		if r := recover(); r != nil {

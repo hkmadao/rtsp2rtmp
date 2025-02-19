@@ -38,12 +38,12 @@ func (rtspClient *RtspClient) Done() {
 	<-rtspClient.connDone
 }
 
-//主动关闭
+// 主动关闭
 func (rtspClient *RtspClient) Close() {
 	close(rtspClient.done)
 }
 
-//更新sps、pps等信息
+// 更新sps、pps等信息
 func (rtspClient *RtspClient) UpdateCodecs(codecs []av.CodecData) {
 	rtspClient.codecs = codecs
 	logs.Warn("RtspClient: %s update codecs", rtspClient.code)
@@ -65,7 +65,7 @@ func (rtspClient *RtspClient) pktTransfer() {
 }
 
 func tee(done <-chan int, in <-chan av.Packet) (<-chan av.Packet, <-chan av.Packet, <-chan av.Packet) {
-	//设置缓冲，调节前后速率
+	//设置缓冲
 	out1 := make(chan av.Packet, 1024)
 	out2 := make(chan av.Packet, 1024)
 	out3 := make(chan av.Packet, 1024)
